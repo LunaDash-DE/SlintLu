@@ -147,6 +147,12 @@ pub enum SurfaceRole {
     },
     /// A `wlr-layer-shell` surface.
     Layer(LayerConfig),
+    /// A lock screen surface covering one output while the session is locked (see
+    /// [`crate::security::lock_session`]).
+    Lock {
+        /// The output (see [`crate::OutputInfo::id`]) to cover.
+        output: u32,
+    },
 }
 
 impl Default for SurfaceRole {

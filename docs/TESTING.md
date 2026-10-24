@@ -4,14 +4,14 @@
 
 ```bash
 # Arch Linux
-sudo pacman -S --needed rust just wayland libxkbcommon fontconfig
+sudo pacman -S --needed rust just wayland libxkbcommon fontconfig pam
 # Optional: headless integration test and screenshots
 sudo pacman -S --needed sway grim
 # Optional: the same static checks CI runs
 cargo install --locked cargo-deny typos-cli
 ```
 
-On Debian/Ubuntu: `sudo apt install just pkg-config libwayland-dev libxkbcommon-dev libfontconfig-dev`.
+On Debian/Ubuntu: `sudo apt install just pkg-config libwayland-dev libxkbcommon-dev libfontconfig-dev libpam0g-dev`.
 
 ## 2. Without a compositor
 

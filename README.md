@@ -36,7 +36,7 @@ core.
 
 ```bash
 cargo install --path .
-slintlu init        # writes ~/.config/slintlu/{shell,bar,launcher}.slint
+slintlu init        # writes ~/.config/slintlu/{shell,bar,launcher,lock}.slint
 slintlu             # runs it; edit the files and watch them reload
 ```
 
@@ -85,6 +85,7 @@ src/
 ├── i18n/         .po parsing, .mo writing, locale detection
 ├── icons/        freedesktop icon theme lookup
 ├── launcher/     desktop entries, search, launch history, launching
+├── security/     session lock and PAM authentication
 ├── audio/        volume and devices (PipeWire / PulseAudio via pactl)
 ├── system/       CPU, memory, disks, temperatures, batteries, network, host
 ├── time/         clock formatting
@@ -106,12 +107,13 @@ scripts/          headless sway integration test
 - [x] D-Bus: notification daemon, media players (MPRIS), NetworkManager, power (logind), dark mode and accent colour (portal)
 - [x] i18n: `@tr()` with `.po` files compiled at runtime and live language switching — see [docs/I18N.md](docs/I18N.md)
 - [x] Applications and icons: desktop entries, fuzzy search ranked by usage, launching (terminal apps, actions), freedesktop icon themes
-- [ ] Clipboard, lock screen (ext-session-lock + PAM), idle, system tray
+- [x] Lock screen: ext-session-lock, PAM, logind lock / suspend integration — see [docs/LOCKSCREEN.md](docs/LOCKSCREEN.md)
+- [ ] Clipboard, idle, system tray, brightness, Bluetooth
 
 ## Development
 
 Requires Rust ≥ 1.92, [`just`](https://github.com/casey/just), and the `wayland`,
-`libxkbcommon` and `fontconfig` development packages.
+`libxkbcommon`, `fontconfig` and `pam` development packages.
 
 ```bash
 just           # list recipes

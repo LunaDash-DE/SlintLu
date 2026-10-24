@@ -7,6 +7,7 @@ use smithay_client_toolkit::compositor::CompositorState;
 use smithay_client_toolkit::reexports::client::protocol::wl_output::WlOutput;
 use smithay_client_toolkit::reexports::client::protocol::wl_surface::WlSurface;
 use smithay_client_toolkit::reexports::client::{Connection, QueueHandle};
+use smithay_client_toolkit::session_lock::{SessionLock, SessionLockState};
 use smithay_client_toolkit::shell::wlr_layer::LayerShell;
 use smithay_client_toolkit::shell::xdg::XdgShell;
 use smithay_client_toolkit::shm::Shm;
@@ -15,6 +16,9 @@ use super::state::State;
 use crate::output::OutputInfo;
 use crate::render::RendererKind;
 use crate::window::WaylandWindow;
+
+/// A callback for session lock events.
+pub(crate) type LockListener = Rc<dyn Fn(crate::security::LockEvent)>;
 
 /// Only ever borrowed briefly and never across calls into Slint, so that Slint callbacks may
 /// freely create or destroy windows while an event is being dispatched.
@@ -29,6 +33,10 @@ pub(crate) struct Context {
     pub windows: RefCell<Vec<Weak<WaylandWindow>>>,
     pub outputs: RefCell<Vec<(OutputInfo, WlOutput)>>,
     pub output_listeners: RefCell<Vec<Rc<dyn Fn()>>>,
+    pub session_lock_state: Option<SessionLockState>,
+    /// The active (or requested) session lock.
+    pub session_lock: RefCell<Option<SessionLock>>,
+    pub lock_listeners: RefCell<Vec<LockListener>>,
     /// Shared EGL display: `None` until first use, `Some(None)` if initialisation failed.
     #[cfg(feature = "opengl")]
     pub egl: RefCell<Option<Option<Rc<crate::render::egl::EglDisplay>>>>,

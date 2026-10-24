@@ -68,7 +68,7 @@ echo "sway is listening on $WAYLAND_DISPLAY (IPC: ${SWAYSOCK:-none})"
 echo "::endgroup::"
 
 echo "::group::launching ${cmd[*]} with the $renderer renderer"
-SLINTLU_RENDERER="$renderer" RUST_LOG="${RUST_LOG:-info}" "${cmd[@]}" >"$work/app.log" 2>&1 &
+SLINTLU_PAM_SERVICE=slintlu-test-nonexistent-service SLINTLU_RENDERER="$renderer" RUST_LOG="${RUST_LOG:-info}" "${cmd[@]}" >"$work/app.log" 2>&1 &
 app=$!
 pids+=($app)
 sleep "${SETTLE_SECONDS:-4}"
@@ -77,6 +77,9 @@ if ! kill -0 "$app" 2>/dev/null; then
 fi
 cat "$work/app.log"
 echo "::endgroup::"
+
+grim -t ppm "$work/shot.ppm"
+cp "$work/shot.ppm" "${SCREENSHOT:-/dev/null}" 2>/dev/null || true
 
 # Exercise the IPC socket when testing the slintlu runtime.
 if [[ "$(basename "${cmd[0]}")" == slintlu ]]; then
@@ -97,6 +100,13 @@ if [[ "$(basename "${cmd[0]}")" == slintlu ]]; then
         [[ "$count" == 1 ]] || { echo "the notification did not arrive" >&2; exit 1; }
         "${cmd[0]}" msg call Notifications.dismiss-all
     fi
+    # The session lock: lock, then a wrong password through a PAM service that denies
+    # everything (never a real one: failures count towards pam_faillock).
+    "${cmd[0]}" msg call Session.lock
+    sleep 1
+    locked="$("${cmd[0]}" msg get Session.locked)"
+    echo "Session.locked = $locked"
+    [[ "$locked" == true ]] || { echo "the session did not lock" >&2; exit 1; }
     actual="$("${cmd[0]}" msg get Shell.renderer)"
     echo "Shell.renderer = $actual"
     if [[ "$renderer" != auto && "$actual" != "$renderer" ]]; then
@@ -105,8 +115,6 @@ if [[ "$(basename "${cmd[0]}")" == slintlu ]]; then
     echo "::endgroup::"
 fi
 
-grim -t ppm "$work/shot.ppm"
-cp "$work/shot.ppm" "${SCREENSHOT:-/dev/null}" 2>/dev/null || true
 
 python3 - "$work/shot.ppm" <<'PY'
 import sys

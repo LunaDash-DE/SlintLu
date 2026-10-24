@@ -31,6 +31,10 @@ pub struct ShellHost {
     config: PathBuf,
     definitions: RefCell<Vec<ComponentDefinition>>,
     entries: RefCell<Vec<Entry>>,
+    /// Components inheriting `LockWindow`; the first one is used as the lock screen.
+    lock_definitions: RefCell<Vec<ComponentDefinition>>,
+    /// Lock screens, one per output, while the session is locked.
+    lock_entries: RefCell<Vec<Entry>>,
     bridge: Bridge,
 }
 
@@ -50,6 +54,7 @@ pub fn shutdown() {
     super::globals::shutdown();
     if let Some(host) = HOST.with(|h| h.borrow_mut().take()) {
         host.entries.borrow_mut().clear();
+        host.lock_entries.borrow_mut().clear();
     }
 }
 
@@ -67,6 +72,8 @@ impl ShellHost {
             config,
             definitions: Default::default(),
             entries: Default::default(),
+            lock_definitions: Default::default(),
+            lock_entries: Default::default(),
             bridge: Bridge::default(),
         });
         HOST.with(|h| *h.borrow_mut() = Some(host.clone()));
@@ -95,6 +102,7 @@ impl ShellHost {
         // Drop the old windows before creating new ones, so namespaces and exclusive zones
         // never overlap.
         self.entries.borrow_mut().clear();
+        self.lock_definitions.borrow_mut().clear();
         *self.definitions.borrow_mut() = definitions;
         self.instantiate();
         super::globals::refresh(self);
@@ -103,17 +111,17 @@ impl ShellHost {
 
     /// Publishes a global property value to all windows, now and after reloads.
     pub fn set_global(&self, global: &str, property: &str, value: Value) {
-        for entry in self.entries.borrow().iter() {
-            bridge::apply_property(&entry.instance, global, property, value.clone());
-        }
+        self.each_instance(|instance| {
+            bridge::apply_property(instance, global, property, value.clone())
+        });
         self.bridge.set_property(global, property, value);
     }
 
     /// Implements a global callback natively in all windows, now and after reloads.
     pub fn on_callback(&self, global: &str, callback: &str, handler: Handler) {
-        for entry in self.entries.borrow().iter() {
-            bridge::apply_callback(&entry.instance, global, callback, handler.clone());
-        }
+        self.each_instance(|instance| {
+            bridge::apply_callback(instance, global, callback, handler.clone())
+        });
         self.bridge.set_callback(global, callback, handler);
     }
 
@@ -168,8 +176,13 @@ impl ShellHost {
 
     /// Runs `f` for every window instance, e.g. for per-instance values like formatted time.
     pub fn each_instance(&self, f: impl FnMut(&ComponentInstance)) {
-        let instances: Vec<_> =
-            self.entries.borrow().iter().map(|e| e.instance.clone_strong()).collect();
+        let instances: Vec<_> = self
+            .entries
+            .borrow()
+            .iter()
+            .chain(self.lock_entries.borrow().iter())
+            .map(|e| e.instance.clone_strong())
+            .collect();
         instances.iter().for_each(f);
     }
 
@@ -190,7 +203,47 @@ impl ShellHost {
                 );
             }
         }
+        self.lock_entries
+            .borrow_mut()
+            .retain(|e| e.output.is_none_or(|id| outputs.iter().any(|o| o.id == id)));
+        if slintlu::security::session_locked() {
+            self.show_lock_screens();
+        }
         self.instantiate();
+        super::globals::refresh(self);
+    }
+
+    /// Whether the shell defines a lock screen.
+    pub fn has_lock_screen(&self) -> bool {
+        !self.lock_definitions.borrow().is_empty()
+    }
+
+    /// Covers every output without one with a lock screen. Call after
+    /// [`slintlu::security::lock_session`].
+    pub fn show_lock_screens(&self) {
+        let Some(definition) = self.lock_definitions.borrow().first().cloned() else { return };
+        for output in slintlu::outputs() {
+            if self.lock_entries.borrow().iter().any(|e| e.output == Some(output.id)) {
+                continue;
+            }
+            let Some(instance) = self.create(&definition, Some(&output)) else { continue };
+            if let Some(window) = slintlu::window_for(instance.window()) {
+                window.set_role(SurfaceRole::Lock { output: output.id });
+            }
+            if let Err(e) = instance.show() {
+                log::error!("cannot show the lock screen: {e}");
+            }
+            self.lock_entries.borrow_mut().push(Entry {
+                component: definition.name().to_string(),
+                output: Some(output.id),
+                instance,
+            });
+        }
+    }
+
+    /// Destroys the lock screens. Call before [`slintlu::security::unlock_session`].
+    pub fn hide_lock_screens(&self) {
+        self.lock_entries.borrow_mut().clear();
     }
 
     /// Creates every missing window.
@@ -226,6 +279,10 @@ impl ShellHost {
                 }
                 WindowKind::Floating { app_id } => {
                     self.show_floating(&name, instance, app_id);
+                    return;
+                }
+                WindowKind::Lock => {
+                    self.lock_definitions.borrow_mut().push(definition.clone());
                     return;
                 }
                 WindowKind::Other => {

@@ -13,7 +13,7 @@ permissions:
 
 env:
   CARGO_TERM_COLOR: always
-  BUILD_PACKAGES: pkg-config libwayland-dev libxkbcommon-dev libfontconfig-dev
+  BUILD_PACKAGES: pkg-config libwayland-dev libxkbcommon-dev libfontconfig-dev libpam0g-dev
 
 jobs:
   title:
@@ -64,7 +64,7 @@ jobs:
       - uses: awalsh128/cache-apt-pkgs-action@v1
         with:
           packages: ${{ env.BUILD_PACKAGES }}
-          version: build-1
+          version: build-2
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
@@ -89,7 +89,7 @@ jobs:
       - uses: awalsh128/cache-apt-pkgs-action@v1
         with:
           packages: ${{ env.BUILD_PACKAGES }}
-          version: build-1
+          version: build-2
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: llvm-tools-preview

@@ -1,0 +1,18 @@
+// The session lock. Define a component inheriting `LockWindow` to enable locking.
+export global Session {
+    // The lock screen is up.
+    in property <bool> locked;
+    // The user whose password unlocks the session.
+    in property <string> user;
+    // A password check is running.
+    in property <bool> authenticating;
+    // Feedback for the lock screen, e.g. "Authentication failure".
+    in property <string> message;
+    // Lock automatically before the machine suspends.
+    in-out property <bool> lock-before-sleep: true;
+
+    // Locks now (also triggered by `loginctl lock-session` and `Power.lock()`).
+    callback lock();
+    // Checks the password with PAM and unlocks on success.
+    callback authenticate(password: string);
+}

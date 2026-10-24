@@ -4031,6 +4031,7 @@ dependencies = [
  "env_logger",
  "futures-util",
  "khronos-egl",
+ "libc",
  "log",
  "notify",
  "pollster",

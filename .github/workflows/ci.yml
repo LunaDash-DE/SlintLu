@@ -18,7 +18,7 @@ env:
   CARGO_INCREMENTAL: 0
   RUST_BACKTRACE: 1
   # Libraries Slint and smithay-client-toolkit link against.
-  BUILD_PACKAGES: pkg-config libwayland-dev libxkbcommon-dev libfontconfig-dev
+  BUILD_PACKAGES: pkg-config libwayland-dev libxkbcommon-dev libfontconfig-dev libpam0g-dev
 
 jobs:
   fmt:
@@ -57,7 +57,7 @@ jobs:
       - uses: awalsh128/cache-apt-pkgs-action@v1
         with:
           packages: ${{ env.BUILD_PACKAGES }}
-          version: build-1
+          version: build-2
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
@@ -83,7 +83,7 @@ jobs:
       - uses: awalsh128/cache-apt-pkgs-action@v1
         with:
           packages: ${{ env.BUILD_PACKAGES }}
-          version: build-1
+          version: build-2
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.toolchain }}
@@ -112,7 +112,7 @@ jobs:
       - uses: awalsh128/cache-apt-pkgs-action@v1
         with:
           packages: ${{ env.BUILD_PACKAGES }} sway grim dbus libnotify-bin fonts-dejavu-core libegl1 libgles2 libegl-mesa0 libgl1-mesa-dri mesa-vulkan-drivers libvulkan1
-          version: headless-3
+          version: headless-4
       - uses: dtolnay/rust-toolchain@stable
       - uses: extractions/setup-just@v4
       - uses: Swatinem/rust-cache@v2

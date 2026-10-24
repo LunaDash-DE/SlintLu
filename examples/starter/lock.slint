@@ -1,0 +1,67 @@
+// The lock screen. Lock with `slintlu msg call Session.lock`, `loginctl lock-session` or the
+// bar; SlintLu also locks before the machine suspends.
+
+import { LockWindow, Session, Clock, Shell } from "@slintlu";
+
+export component LockScreen inherits LockWindow {
+    background: #11111b;
+
+    changed width => { password.focus(); }
+
+    VerticalLayout {
+        alignment: center;
+        spacing: 18px;
+
+        Text {
+            text: Clock.time;
+            font-size: 72px;
+            color: #cdd6f4;
+            horizontal-alignment: center;
+        }
+        Text {
+            text: Clock.date;
+            font-size: 20px;
+            color: #a6adc8;
+            horizontal-alignment: center;
+        }
+        HorizontalLayout {
+            alignment: center;
+            Rectangle {
+                width: 320px;
+                height: 48px;
+                border-radius: 24px;
+                background: #313244;
+                border-width: 2px;
+                border-color: Session.message != "" ? #f38ba8 : password.has-focus ? #89b4fa : #45475a;
+                password := TextInput {
+                    x: 20px;
+                    width: parent.width - 40px;
+                    input-type: InputType.password;
+                    color: #cdd6f4;
+                    font-size: 18px;
+                    vertical-alignment: center;
+                    enabled: !Session.authenticating;
+                    accepted => {
+                        Session.authenticate(self.text);
+                        self.text = "";
+                    }
+                }
+                Text {
+                    x: 20px;
+                    height: parent.height;
+                    visible: password.text == "";
+                    text: Session.authenticating ? "Checking…" : "Password for " + Session.user;
+                    color: #6c7086;
+                    font-size: 16px;
+                    vertical-alignment: center;
+                }
+            }
+        }
+        Text {
+            text: Session.message;
+            color: #f38ba8;
+            font-size: 14px;
+            horizontal-alignment: center;
+        }
+    }
+}

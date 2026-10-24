@@ -50,6 +50,7 @@ pub mod ipc;
 pub mod launcher;
 mod output;
 mod render;
+pub mod security;
 mod shell;
 pub mod system;
 pub mod time;

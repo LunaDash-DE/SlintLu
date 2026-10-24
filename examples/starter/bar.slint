@@ -1,5 +1,5 @@
 import { Launcher } from "launcher.slint";
-import { PanelWindow, Shell, Clock, System, Battery, Audio, Workspaces, Media, Network, Notifications } from "@slintlu";
+import { PanelWindow, Shell, Clock, System, Battery, Audio, Workspaces, Media, Network, Notifications, Session } from "@slintlu";
 
 component Chip inherits Rectangle {
     in property <string> text;
@@ -115,6 +115,7 @@ export component Bar inherits PanelWindow {
             }
             Chip { visible: Workspaces.keyboard-layout != ""; text: Workspaces.keyboard-layout; accent: #b4befe; }
             Chip { text: "apps"; accent: #cba6f7; clicked => { Launcher.open = !Launcher.open; } }
+            Chip { text: "lock"; accent: #f38ba8; clicked => { Session.lock(); } }
         }
     }
 }

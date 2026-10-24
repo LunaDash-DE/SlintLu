@@ -3,9 +3,11 @@
 
 pub(crate) mod config;
 pub(crate) mod layer;
+pub(crate) mod lock;
 pub(crate) mod xdg;
 
 use smithay_client_toolkit::compositor::Surface;
+use smithay_client_toolkit::session_lock::SessionLockSurface;
 use smithay_client_toolkit::shell::wlr_layer::LayerSurface;
 use smithay_client_toolkit::shell::xdg::window::Window as XdgWindow;
 
@@ -15,4 +17,6 @@ pub(crate) enum RoleObject {
     Unassigned(Option<Surface>),
     Layer(LayerSurface),
     Toplevel(XdgWindow),
+    /// Held only to keep the lock surface alive; dropping it destroys the surface.
+    Lock(#[allow(dead_code)] SessionLockSurface),
 }

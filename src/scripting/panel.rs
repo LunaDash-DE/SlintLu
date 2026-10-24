@@ -10,6 +10,8 @@ pub enum WindowKind {
     Floating {
         app_id: String,
     },
+    /// A lock screen, shown on every output while the session is locked.
+    Lock,
     /// Not derived from a SlintLu window; the component is not shown.
     Other,
 }
@@ -35,6 +37,7 @@ pub fn window_kind(instance: &ComponentInstance) -> WindowKind {
             Some(Value::Struct(settings)) => WindowKind::Panel(spec_from_struct(&settings)),
             _ => WindowKind::Other,
         },
+        Some(Value::String(kind)) if kind == "lock" => WindowKind::Lock,
         Some(Value::String(kind)) if kind == "window" => WindowKind::Floating {
             app_id: match global("app-id") {
                 Some(Value::String(id)) if !id.is_empty() => id.to_string(),

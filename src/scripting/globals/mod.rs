@@ -10,6 +10,7 @@ mod media;
 mod network;
 mod notifications;
 mod power;
+mod session;
 mod shell;
 mod system;
 mod theme;
@@ -42,6 +43,7 @@ pub fn install(host: &Rc<ShellHost>, info: &ShellInfo) {
     i18n::install(host);
     icons::install(host);
     apps::install(host);
+    session::install(host);
 }
 
 /// Releases state that must not outlive the event loop.

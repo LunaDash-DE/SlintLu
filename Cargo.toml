@@ -34,6 +34,7 @@ rustix = { version = "1", features = ["fs"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 zbus = { version = "6", default-features = false, features = ["default-rt", "proxy", "service"] }
+libc = "0.2"
 futures-util = { version = "0.3", default-features = false, features = ["std", "async-await-macro"] }
 
 khronos-egl = { version = "6", features = ["dynamic"], optional = true }

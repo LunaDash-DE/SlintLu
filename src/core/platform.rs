@@ -9,6 +9,7 @@ use smithay_client_toolkit::reexports::calloop::{EventLoop, channel};
 use smithay_client_toolkit::reexports::calloop_wayland_source::WaylandSource;
 use smithay_client_toolkit::reexports::client::Connection;
 use smithay_client_toolkit::reexports::client::globals::registry_queue_init;
+use smithay_client_toolkit::session_lock::SessionLockState;
 use smithay_client_toolkit::shell::wlr_layer::LayerShell;
 use smithay_client_toolkit::shell::xdg::XdgShell;
 use smithay_client_toolkit::shm::Shm;
@@ -54,6 +55,14 @@ impl WaylandPlatform {
             .inspect_err(|e| log::warn!("xdg_wm_base is not available: {e}"))
             .ok();
 
+        let session_lock_state = globals
+            .contents()
+            .with_list(|list| list.iter().any(|g| g.interface == "ext_session_lock_manager_v1"))
+            .then(|| SessionLockState::new(&globals, &qh));
+        if session_lock_state.is_none() {
+            log::warn!("ext_session_lock_manager_v1 is not available: lock screens are disabled");
+        }
+
         let ctx = Rc::new(Context {
             conn: conn.clone(),
             qh: qh.clone(),
@@ -65,6 +74,9 @@ impl WaylandPlatform {
             windows: Default::default(),
             outputs: Default::default(),
             output_listeners: Default::default(),
+            session_lock_state,
+            session_lock: Default::default(),
+            lock_listeners: Default::default(),
             #[cfg(feature = "opengl")]
             egl: Default::default(),
             #[cfg(feature = "vulkan")]

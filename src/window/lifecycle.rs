@@ -6,7 +6,7 @@ use smithay_client_toolkit::shell::WaylandSurface;
 
 use super::WaylandWindow;
 use crate::shell::config::SurfaceRole;
-use crate::shell::{RoleObject, layer, xdg};
+use crate::shell::{RoleObject, layer, lock, xdg};
 
 impl WaylandWindow {
     /// Gives the surface its role (first time) or re-maps it, then waits for a configure.
@@ -34,6 +34,13 @@ impl WaylandWindow {
                     }
                 },
                 SurfaceRole::Toplevel { app_id } => self.create_toplevel(surface, app_id),
+                SurfaceRole::Lock { output } => match lock::create(&self.ctx, surface, *output) {
+                    Ok(lock_surface) => RoleObject::Lock(lock_surface),
+                    Err(surface) => {
+                        log::error!("cannot show a lock screen: the session is not being locked");
+                        RoleObject::Unassigned(Some(surface))
+                    }
+                },
             };
         }
 
@@ -46,6 +53,9 @@ impl WaylandWindow {
                 layer_surface.commit();
             }
             RoleObject::Toplevel(window) => window.commit(),
+            // Lock surfaces get their configure without a commit; committing before the first
+            // buffer is a protocol error.
+            RoleObject::Lock(_) => {}
             RoleObject::Unassigned(_) => {}
         }
     }
@@ -69,6 +79,10 @@ impl WaylandWindow {
     /// can be shown again.
     pub(super) fn unmap(&self) {
         if !self.frame.shown.replace(false) {
+            return;
+        }
+        // Lock surfaces must never get a null buffer; they disappear with the lock.
+        if matches!(&*self.role_object.borrow(), RoleObject::Lock(_)) {
             return;
         }
         self.frame.configured.set(false);

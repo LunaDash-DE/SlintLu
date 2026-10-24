@@ -66,3 +66,11 @@ export component FloatingWindow inherits Window {
         SlintLuRuntime.app-id = root.app-id;
     }
 }
+
+// A lock screen. While the session is locked (see `Session.lock()`), one instance covers every
+// screen and receives all input. Call `Session.authenticate(password)` to unlock.
+export component LockWindow inherits Window {
+    init => {
+        SlintLuRuntime.kind = "lock";
+    }
+}
