@@ -45,6 +45,14 @@ test *args:
 doc:
     RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --document-private-items
 
+# Regenerate docs/API.md from the @slintlu library
+api-docs:
+    python3 scripts/gen-api-docs.py
+
+# Fail when docs/API.md is out of date (CI)
+api-docs-check:
+    python3 scripts/gen-api-docs.py --check
+
 # Licences, advisories, duplicate and banned crates (needs cargo-deny)
 deny:
     cargo deny check
@@ -59,7 +67,7 @@ headless renderer="software":
     scripts/headless-test.sh {{ renderer }}
 
 # Everything CI runs, in the same order
-ci: fmt-check lint test doc
+ci: fmt-check lint test doc api-docs-check
 
 # Remove build artefacts
 clean:

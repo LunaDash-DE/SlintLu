@@ -7,20 +7,25 @@ import { SlintLuRuntime } from "runtime.slint";
 // `preferred-width` / `preferred-height` or let the layout decide; axes anchored on both
 // sides are stretched by the compositor.
 export component PanelWindow inherits Window {
+    // Stacking layer: background (wallpapers), bottom, top (bars) or overlay (launchers, OSDs).
     in property <Layer> layer: Layer.top;
     // Namespace reported to the compositor, e.g. for layer rules.
     in property <string> namespace: "slintlu";
+    // Screen edges to attach to. Anchoring opposite edges stretches the panel; no anchors centre it.
     in property <bool> anchor-top;
     in property <bool> anchor-bottom;
     in property <bool> anchor-left;
     in property <bool> anchor-right;
+    // How much space other windows leave for the panel.
     in property <ExclusiveMode> exclusive-mode: ExclusiveMode.auto;
     // Used when `exclusive-mode` is `fixed`.
     in property <length> exclusive-zone: 0px;
+    // Distance from the anchored edges.
     in property <length> margin-top: 0px;
     in property <length> margin-right: 0px;
     in property <length> margin-bottom: 0px;
     in property <length> margin-left: 0px;
+    // Whether the panel can take keyboard focus.
     in property <KeyboardMode> keyboard-mode: KeyboardMode.none;
     // Connector names of the screens to appear on, e.g. ["DP-1"]. Empty means all screens.
     in property <[string]> show-on: [];
@@ -59,6 +64,7 @@ export component PanelWindow inherits Window {
 
 // An ordinary application window (settings, dialogs …), shown once.
 export component FloatingWindow inherits Window {
+    // The app id reported to the compositor (for window rules).
     in property <string> app-id: "slintlu";
 
     init => {

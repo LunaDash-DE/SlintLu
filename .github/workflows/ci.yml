@@ -69,6 +69,7 @@ jobs:
           save-if: ${{ github.ref == 'refs/heads/main' }}
       - run: just lint
       - run: just doc
+      - run: just api-docs-check
 
   test:
     name: Test (${{ matrix.toolchain }})

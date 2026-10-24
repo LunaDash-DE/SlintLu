@@ -56,6 +56,8 @@ export component Bar inherits PanelWindow {
 }
 ```
 
+Every component, global and struct is listed in the [API reference](docs/API.md).
+
 Run `slintlu library-path` and add the printed directory as the `slintlu` library path in your
 editor's Slint extension to get completion for `@slintlu`.
 
