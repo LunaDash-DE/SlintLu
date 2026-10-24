@@ -102,9 +102,13 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-      - uses: DeterminateSystems/nix-installer-action@main
-      # Caches the Nix store between runs.
-      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: cachix/install-nix-action@v31
+      # Caches the Nix store between runs (GitHub Actions cache, no account needed).
+      - uses: nix-community/cache-nix-action@v6
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock', 'flake.nix', 'nix/**', 'Cargo.lock') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+          gc-max-store-size-linux: 4G
       - name: Check the flake
         run: nix flake check -L --show-trace
       - name: Build and smoke-test the package

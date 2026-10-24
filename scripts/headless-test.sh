@@ -51,6 +51,9 @@ fail() {
     exit 1
 }
 
+# Any other failing command is reported the same way.
+trap 'fail "command failed (line $LINENO): $BASH_COMMAND"' ERR
+
 cat > "$work/sway.conf" <<CONF
 output HEADLESS-1 resolution 1280x720 background #000000 solid_color
 default_border none
