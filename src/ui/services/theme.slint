@@ -1,10 +1,37 @@
-// Desktop appearance preferences from the XDG desktop portal.
+// The colour theme: a built-in palette (or pywal colours) chosen by the desktop's light / dark
+// preference, adjusted by `theme.json` next to your shell. Style everything with these roles and
+// the shell follows the desktop automatically.
 export global Theme {
-    // The user prefers dark (true) or light (false); defaults to dark.
+    // The palette in use, e.g. "catppuccin-mocha".
+    in property <string> name;
+    // All built-in palettes.
+    in property <[string]> palettes;
     in property <bool> dark: true;
-    // Whether the desktop states a preference at all.
+    // The desktop states a light / dark preference.
     in property <bool> has-preference;
-    // The desktop's accent colour, or the default.
-    in property <color> accent: #89b4fa;
     in property <bool> high-contrast;
+
+    in property <color> background: #1e1e2e;
+    in property <color> surface: #313244;
+    in property <color> surface-alt: #45475a;
+    in property <color> border: #585b70;
+    in property <color> text: #cdd6f4;
+    in property <color> text-muted: #a6adc8;
+    in property <color> accent: #89b4fa;
+    in property <color> red: #f38ba8;
+    in property <color> green: #a6e3a1;
+    in property <color> yellow: #f9e2af;
+    in property <color> blue: #89b4fa;
+    in property <color> magenta: #cba6f7;
+    in property <color> cyan: #94e2d5;
+
+    // Empty means the default font.
+    in property <string> font-family;
+    in property <length> font-size: 13px;
+    in property <length> radius: 10px;
+
+    // "auto" (follow the desktop), "dark" or "light", for this session.
+    callback set-mode(mode: string);
+    // Uses a palette for the current mode, for this session.
+    callback set-palette(name: string);
 }

@@ -99,6 +99,7 @@ src/
 ├── security/     session lock and PAM authentication
 ├── audio/        volume and devices (PipeWire / PulseAudio via pactl)
 ├── system/       CPU, memory, disks, temperatures, batteries, network, host
+├── theme/        palettes, theme.json, pywal
 ├── time/         clock formatting
 ├── util/         human readable sizes, rates and durations
 ├── ui/           the `@slintlu` Slint library
@@ -121,6 +122,7 @@ scripts/          headless sway integration test
 - [x] Lock screen: ext-session-lock, PAM, logind lock / suspend integration — see [docs/LOCKSCREEN.md](docs/LOCKSCREEN.md)
 - [x] Clipboard and primary selection, idle detection / inhibition / auto-lock, fractional scaling
 - [x] Screen brightness (sysfs + logind, no root) and Bluetooth (BlueZ, never auto-started)
+- [x] Theming: built-in palettes, `theme.json`, pywal, desktop dark mode and accent — see [docs/THEMING.md](docs/THEMING.md)
 - [x] System tray: StatusNotifierItem host (and watcher when none runs) with dbusmenu menus
 
 ## Development

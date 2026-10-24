@@ -56,6 +56,7 @@ mod render;
 pub mod security;
 mod shell;
 pub mod system;
+pub mod theme;
 pub mod time;
 pub mod util;
 mod window;

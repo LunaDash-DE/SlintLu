@@ -1,40 +1,138 @@
-//! The `Theme` global (XDG desktop portal appearance settings).
+//! The `Theme` global: palettes from `theme.json`, pywal and the desktop portal.
 
+use std::cell::RefCell;
 use std::rc::Rc;
 
-use slint::Color;
+use slint::Color as SlintColor;
 use slint_interpreter::Value;
 use slintlu::dbus::portal::{Appearance, ColorScheme, Portal};
+use slintlu::theme::{self, Color, ThemeConfig};
 
 use super::worker::spawn_watcher;
+use crate::scripting::bridge::{list_value, string, string_arg};
 use crate::scripting::{ShellHost, host};
 
-fn publish(host: &ShellHost, appearance: &Appearance) {
-    host.set_global("Theme", "dark", Value::Bool(appearance.color_scheme != ColorScheme::Light));
-    host.set_global(
-        "Theme",
-        "has-preference",
-        Value::Bool(appearance.color_scheme != ColorScheme::NoPreference),
-    );
-    host.set_global("Theme", "high-contrast", Value::Bool(appearance.high_contrast));
-    if let Some((r, g, b)) = appearance.accent {
-        let channel = |c: f32| (c * 255.0).round() as u8;
-        let color = Color::from_rgb_u8(channel(r), channel(g), channel(b));
-        host.set_global("Theme", "accent", Value::Brush(color.into()));
-    }
+#[derive(Default)]
+struct ThemeState {
+    config: ThemeConfig,
+    appearance: Option<Appearance>,
 }
 
-pub fn install(_host: &Rc<ShellHost>) {
-    let portal = match Portal::connect() {
-        Ok(portal) => portal,
-        Err(e) => return log::info!("theme: no session bus ({e})"),
-    };
-    spawn_watcher("theme", move || {
-        portal
-            .watch(|appearance| {
-                let appearance = *appearance;
-                host::post(move |host| publish(host, &appearance));
-            })
-            .map_err(std::io::Error::other)
+thread_local! {
+    static STATE: RefCell<ThemeState> = RefCell::default();
+}
+
+fn color(c: Color) -> Value {
+    Value::Brush(SlintColor::from_rgb_u8(c.0, c.1, c.2).into())
+}
+
+fn publish(host: &ShellHost) {
+    STATE.with(|state| {
+        let state = state.borrow();
+        let prefers_dark = state.appearance.and_then(|a| match a.color_scheme {
+            ColorScheme::Dark => Some(true),
+            ColorScheme::Light => Some(false),
+            ColorScheme::NoPreference => None,
+        });
+        let accent = state.appearance.and_then(|a| a.accent).map(|(r, g, b)| {
+            let c = |v: f32| (v * 255.0).round() as u8;
+            Color(c(r), c(g), c(b))
+        });
+        let p = theme::resolve(&state.config, prefers_dark, accent);
+        let set = |name: &str, value: Value| host.set_global("Theme", name, value);
+        set("name", string(&p.name));
+        set("dark", Value::Bool(p.dark));
+        set("has-preference", Value::Bool(prefers_dark.is_some()));
+        set("high-contrast", Value::Bool(state.appearance.is_some_and(|a| a.high_contrast)));
+        for (role, c) in [
+            ("background", p.background),
+            ("surface", p.surface),
+            ("surface-alt", p.surface_alt),
+            ("border", p.border),
+            ("text", p.text),
+            ("text-muted", p.text_muted),
+            ("accent", p.accent),
+            ("red", p.red),
+            ("green", p.green),
+            ("yellow", p.yellow),
+            ("blue", p.blue),
+            ("magenta", p.magenta),
+            ("cyan", p.cyan),
+        ] {
+            set(role, color(c));
+        }
+        set("font-family", string(&state.config.font_family));
+        set("font-size", Value::Number(state.config.font_size.into()));
+        set("radius", Value::Number(state.config.radius.into()));
     });
+}
+
+/// Reads `<config dir>/theme.json`; called before every load so edits apply on reload.
+pub fn load_config(host: &ShellHost) {
+    let path = host.config().parent().map(|d| d.join("theme.json"));
+    let config = match path.as_deref().map(ThemeConfig::load) {
+        Some(Ok(config)) => config,
+        Some(Err(e)) => {
+            log::error!("{e}; using the default theme");
+            ThemeConfig::default()
+        }
+        None => ThemeConfig::default(),
+    };
+    STATE.with(|s| s.borrow_mut().config = config);
+    publish(host);
+}
+
+pub fn install(host: &Rc<ShellHost>) {
+    host.set_global(
+        "Theme",
+        "palettes",
+        list_value(theme::presets().iter().map(|p| string(&p.name))),
+    );
+    publish(host);
+
+    if let Ok(portal) = Portal::connect() {
+        spawn_watcher("theme", move || {
+            portal
+                .watch(|appearance| {
+                    let appearance = *appearance;
+                    host::post(move |host| {
+                        STATE.with(|s| s.borrow_mut().appearance = Some(appearance));
+                        publish(host);
+                    });
+                })
+                .map_err(std::io::Error::other)
+        });
+    }
+
+    let weak = Rc::downgrade(host);
+    host.on_callback(
+        "Theme",
+        "set-mode",
+        Rc::new(move |args| {
+            if let Some(mode) = string_arg(args, 0) {
+                STATE.with(|s| s.borrow_mut().config.mode = mode);
+                if let Some(host) = weak.upgrade() {
+                    publish(&host);
+                }
+            }
+            Value::Void
+        }),
+    );
+    let weak = Rc::downgrade(host);
+    host.on_callback(
+        "Theme",
+        "set-palette",
+        Rc::new(move |args| {
+            if let (Some(name), Some(host)) = (string_arg(args, 0), weak.upgrade()) {
+                let dark = matches!(host.global_property("Theme", "dark"), Some(Value::Bool(true)));
+                STATE.with(|s| {
+                    let mut s = s.borrow_mut();
+                    s.config.pywal = false;
+                    if dark { s.config.dark = name } else { s.config.light = name }
+                });
+                publish(&host);
+            }
+            Value::Void
+        }),
+    );
 }

@@ -20,6 +20,13 @@ pub fn to_json(value: &Value) -> Json {
         Value::String(s) => Json::String(s.to_string()),
         Value::Bool(b) => Json::Bool(*b),
         Value::EnumerationValue(_, v) => Json::String(v.clone()),
+        Value::Brush(slint::Brush::SolidColor(c)) => Json::String(format!(
+            "#{:02x}{:02x}{:02x}{:02x}",
+            c.red(),
+            c.green(),
+            c.blue(),
+            c.alpha()
+        )),
         Value::Model(model) => Json::Array(model.iter().map(|v| to_json(&v)).collect()),
         Value::Struct(s) => {
             Json::Object(s.iter().map(|(k, v)| (k.to_owned(), to_json(v))).collect::<Map<_, _>>())
@@ -59,6 +66,12 @@ mod tests {
         ] {
             assert_eq!(to_json(&from_json(&json)), json, "{json}");
         }
+    }
+
+    #[test]
+    fn colours_become_hex() {
+        let value = Value::Brush(slint::Color::from_rgb_u8(0x89, 0xb4, 0xfa).into());
+        assert_eq!(to_json(&value), json!("#89b4faff"));
     }
 
     #[test]

@@ -1,6 +1,6 @@
 // System tray icons for the bar, and the menu panel they open.
 
-import { PanelWindow, Tray, TrayItemInfo, Shell, Workspaces } from "@slintlu";
+import { PanelWindow, Tray, TrayItemInfo, Shell, Workspaces, Theme } from "@slintlu";
 
 export component TrayIcons inherits HorizontalLayout {
     spacing: 6px;
@@ -10,7 +10,7 @@ export component TrayIcons inherits HorizontalLayout {
         width: 24px;
         height: 24px;
         border-radius: 6px;
-        background: touch.has-hover ? #45475a : transparent;
+        background: touch.has-hover ? Theme.surface-alt : transparent;
         Image { source: item.icon; width: 18px; height: 18px; }
         touch := TouchArea {
             pointer-event(event) => {
@@ -43,16 +43,16 @@ export component TrayMenu inherits PanelWindow {
 
     Rectangle {
         border-radius: 10px;
-        background: #1e1e2ef5;
+        background: Theme.background.with-alpha(0.96);
         border-width: 1px;
-        border-color: #45475a;
+        border-color: Theme.surface-alt;
         VerticalLayout {
             padding: 6px;
             for entry in Tray.menu: Rectangle {
                 height: entry.separator ? 9px : 28px;
                 border-radius: 6px;
-                background: !entry.separator && entry.enabled && touch.has-hover ? #45475a : transparent;
-                if entry.separator: Rectangle { height: 1px; background: #45475a; }
+                background: !entry.separator && entry.enabled && touch.has-hover ? Theme.surface-alt : transparent;
+                if entry.separator: Rectangle { height: 1px; background: Theme.surface-alt; }
                 if !entry.separator: HorizontalLayout {
                     padding-left: 10px + entry.depth * 14px;
                     padding-right: 10px;
@@ -60,17 +60,17 @@ export component TrayMenu inherits PanelWindow {
                     Text {
                         width: 14px;
                         text: entry.checked ? (entry.toggle-type == "radio" ? "●" : "✓") : "";
-                        color: #a6e3a1;
+                        color: Theme.green;
                         vertical-alignment: center;
                     }
                     Text {
                         text: entry.label;
-                        color: entry.enabled ? #cdd6f4 : #6c7086;
+                        color: entry.enabled ? Theme.text : Theme.text-muted.with-alpha(0.7);
                         vertical-alignment: center;
                         overflow: elide;
                         horizontal-stretch: 1;
                     }
-                    Text { text: entry.has-children ? "›" : ""; color: #6c7086; vertical-alignment: center; }
+                    Text { text: entry.has-children ? "›" : ""; color: Theme.text-muted.with-alpha(0.7); vertical-alignment: center; }
                 }
                 touch := TouchArea {
                     enabled: entry.enabled && !entry.separator && !entry.has-children;

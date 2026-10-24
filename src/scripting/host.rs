@@ -89,6 +89,7 @@ impl ShellHost {
     /// is kept and `false` is returned.
     pub fn load(&self) -> bool {
         super::globals::load_translations(self);
+        super::globals::load_theme(self);
         let compiled = match compiler::compile(&self.config) {
             Ok(compiled) => compiled,
             Err(diagnostics) => {

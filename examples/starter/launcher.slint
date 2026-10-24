@@ -1,7 +1,7 @@
 // An application launcher. Bind a key to `slintlu msg toggle Launcher.open`, e.g. in niri:
 //     Mod+D { spawn "slintlu" "msg" "toggle" "Launcher.open"; }
 
-import { PanelWindow, Shell, Apps, AppInfo, Workspaces } from "@slintlu";
+import { PanelWindow, Shell, Apps, AppInfo, Workspaces, Theme } from "@slintlu";
 
 export global Launcher {
     in-out property <bool> open;
@@ -14,7 +14,7 @@ component Row inherits Rectangle {
 
     height: 52px;
     border-radius: 10px;
-    background: root.selected ? #45475a : touch.has-hover ? #313244 : transparent;
+    background: root.selected ? Theme.surface-alt : touch.has-hover ? Theme.surface : transparent;
 
     HorizontalLayout {
         padding: 8px;
@@ -22,10 +22,10 @@ component Row inherits Rectangle {
         Image { source: root.app.icon; width: 36px; height: 36px; }
         VerticalLayout {
             alignment: center;
-            Text { text: root.app.name; color: #cdd6f4; font-size: 15px; overflow: elide; }
+            Text { text: root.app.name; color: Theme.text; font-size: 15px; overflow: elide; }
             Text {
                 text: root.app.generic-name != "" ? root.app.generic-name : root.app.comment;
-                color: #a6adc8;
+                color: Theme.text-muted;
                 font-size: 12px;
                 overflow: elide;
             }
@@ -64,9 +64,9 @@ export component LauncherPanel inherits PanelWindow {
 
     Rectangle {
         border-radius: 16px;
-        background: #1e1e2ef2;
+        background: Theme.background.with-alpha(0.95);
         border-width: 1px;
-        border-color: #45475a;
+        border-color: Theme.surface-alt;
 
         VerticalLayout {
             padding: 16px;
@@ -75,11 +75,11 @@ export component LauncherPanel inherits PanelWindow {
             Rectangle {
                 height: 44px;
                 border-radius: 10px;
-                background: #313244;
+                background: Theme.surface;
                 input := TextInput {
                     x: 14px;
                     width: parent.width - 28px;
-                    color: #cdd6f4;
+                    color: Theme.text;
                     font-size: 16px;
                     vertical-alignment: center;
                     edited => {
@@ -111,7 +111,7 @@ export component LauncherPanel inherits PanelWindow {
                     x: 14px;
                     visible: input.text == "";
                     text: "Search applications…";
-                    color: #6c7086;
+                    color: Theme.text-muted.with-alpha(0.7);
                     font-size: 16px;
                     vertical-alignment: center;
                     height: parent.height;

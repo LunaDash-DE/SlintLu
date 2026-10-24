@@ -25,6 +25,7 @@ use std::rc::Rc;
 use super::ShellHost;
 
 pub use i18n::{TRANSLATION_DOMAIN, load_translations};
+pub use theme::load_config as load_theme;
 
 /// Static information the `Shell` global exposes.
 pub struct ShellInfo {

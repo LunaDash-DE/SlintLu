@@ -1,10 +1,10 @@
 import { Launcher } from "launcher.slint";
 import { TrayIcons } from "tray.slint";
-import { PanelWindow, Shell, Clock, System, Battery, Audio, Workspaces, Media, Network, Notifications, Session } from "@slintlu";
+import { PanelWindow, Shell, Clock, System, Battery, Audio, Workspaces, Media, Network, Notifications, Session, Theme } from "@slintlu";
 
 component Chip inherits Rectangle {
     in property <string> text;
-    in property <color> accent: #cdd6f4;
+    in property <color> accent: Theme.text;
     in property <bool> highlighted;
     callback clicked();
     callback scrolled(delta: length);
@@ -12,12 +12,12 @@ component Chip inherits Rectangle {
     height: 24px;
     width: max(24px, label.preferred-width + 20px);
     border-radius: 12px;
-    background: root.highlighted ? #89b4fa : touch.pressed ? #585b70 : touch.has-hover ? #45475a : #313244;
+    background: root.highlighted ? Theme.accent : touch.pressed ? Theme.border : touch.has-hover ? Theme.surface-alt : Theme.surface;
     animate background { duration: 120ms; }
 
     label := Text {
         text: root.text;
-        color: root.highlighted ? #1e1e2e : root.accent;
+        color: root.highlighted ? Theme.background : root.accent;
         font-size: 13px;
         vertical-alignment: center;
     }
@@ -36,7 +36,7 @@ export component Bar inherits PanelWindow {
     anchor-left: true;
     anchor-right: true;
     preferred-height: 34px;
-    background: #1e1e2ee6;
+    background: Theme.background.with-alpha(0.92);
 
     init => {
         Clock.time-format = "%H:%M:%S";
@@ -58,7 +58,7 @@ export component Bar inherits PanelWindow {
                 visible: ws.output == Shell.screen.name;
                 text: ws.name != "" ? ws.name : ws.index;
                 highlighted: ws.active;
-                accent: ws.urgent ? #f38ba8 : #cdd6f4;
+                accent: ws.urgent ? Theme.red : Theme.text;
                 clicked => { Workspaces.focus(ws.id); }
             }
         }
@@ -66,7 +66,7 @@ export component Bar inherits PanelWindow {
         Text {
             horizontal-stretch: 1;
             text: Workspaces.focused-window.title;
-            color: #bac2de;
+            color: Theme.text-muted;
             font-size: 13px;
             vertical-alignment: center;
             overflow: elide;
@@ -75,11 +75,11 @@ export component Bar inherits PanelWindow {
         Chip {
             visible: Media.player.title != "";
             text: (Media.player.playing ? "▶ " : "⏸ ") + Media.player.title;
-            accent: #f5c2e7;
+            accent: Theme.magenta;
             clicked => { Media.play-pause(); }
         }
 
-        Chip { text: Clock.date + "  " + Clock.time; accent: #f9e2af; }
+        Chip { text: Clock.date + "  " + Clock.time; accent: Theme.yellow; }
 
         HorizontalLayout {
             spacing: 4px;
@@ -87,13 +87,13 @@ export component Bar inherits PanelWindow {
             TrayIcons { }
             Chip {
                 text: "cpu " + round(System.cpu * 100) + "%";
-                accent: System.cpu > 0.8 ? #f38ba8 : #a6e3a1;
+                accent: System.cpu > 0.8 ? Theme.red : Theme.green;
             }
-            Chip { text: "mem " + round(System.memory * 100) + "%"; accent: #94e2d5; }
+            Chip { text: "mem " + round(System.memory * 100) + "%"; accent: Theme.cyan; }
             Chip {
                 visible: Audio.available;
                 text: Audio.output.muted ? "muted" : "vol " + round(Audio.output.volume * 100) + "%";
-                accent: #89dceb;
+                accent: Theme.cyan;
                 clicked => { Audio.toggle-muted(); }
                 scrolled(delta) => {
                     Audio.set-volume(clamp(Audio.output.volume + (delta > 0 ? 0.05 : -0.05), 0, 1.5));
@@ -102,22 +102,22 @@ export component Bar inherits PanelWindow {
             Chip {
                 visible: Battery.available;
                 text: (Battery.charging ? "chg " : "bat ") + round(Battery.level * 100) + "%";
-                accent: Battery.level < 0.2 && !Battery.charging ? #f38ba8 : #a6e3a1;
+                accent: Battery.level < 0.2 && !Battery.charging ? Theme.red : Theme.green;
             }
             Chip {
                 visible: Network.available;
                 text: !Network.connected ? "offline" : Network.kind == "wifi" ? Network.name + " " + round(Network.strength * 100) + "%" : Network.kind;
-                accent: Network.online ? #a6e3a1 : #fab387;
+                accent: Network.online ? Theme.green : Theme.yellow;
             }
             Chip {
                 visible: Notifications.available;
                 text: Notifications.do-not-disturb ? "dnd" : "notif " + Notifications.count;
-                accent: #f9e2af;
+                accent: Theme.yellow;
                 clicked => { Notifications.do-not-disturb = !Notifications.do-not-disturb; }
             }
-            Chip { visible: Workspaces.keyboard-layout != ""; text: Workspaces.keyboard-layout; accent: #b4befe; }
-            Chip { text: "apps"; accent: #cba6f7; clicked => { Launcher.open = !Launcher.open; } }
-            Chip { text: "lock"; accent: #f38ba8; clicked => { Session.lock(); } }
+            Chip { visible: Workspaces.keyboard-layout != ""; text: Workspaces.keyboard-layout; accent: Theme.blue; }
+            Chip { text: "apps"; accent: Theme.magenta; clicked => { Launcher.open = !Launcher.open; } }
+            Chip { text: "lock"; accent: Theme.red; clicked => { Session.lock(); } }
         }
     }
 }
