@@ -16,7 +16,8 @@ core.
   - `wlr-layer-shell` panels with anchors, margins, exclusive zones, keyboard modes, per-screen
     instances and show/hide for popups and drawers;
   - `xdg-shell` windows for settings dialogs and the like;
-  - multi-monitor with hot-plug, integer scaling, `cursor-shape-v1`, key repeat.
+  - multi-monitor with hot-plug, fractional scaling (`fractional-scale-v1` + viewporter),
+    clipboard and primary selection, `cursor-shape-v1`, key repeat, virtual keyboards.
 - **Three renderers with automatic fallback**
 
   | `--renderer` / `SLINTLU_RENDERER` | Implementation | Graphics API |

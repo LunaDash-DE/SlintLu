@@ -3,6 +3,7 @@
 mod adapter;
 mod frame;
 mod lifecycle;
+pub(crate) mod scale;
 
 use std::cell::{Cell, RefCell};
 use std::rc::{Rc, Weak};
@@ -25,7 +26,8 @@ pub(crate) struct FrameState {
     /// Preferred size from the Slint layout, in logical pixels.
     pub preferred_size: Cell<(u32, u32)>,
     pub min_size: Cell<Option<(u32, u32)>>,
-    pub scale: Cell<i32>,
+    /// Scale factor; fractional when the compositor supports fractional-scale-v1.
+    pub scale: Cell<f32>,
     /// `set_visible(true)` was called and not undone.
     pub shown: Cell<bool>,
     /// The compositor acknowledged the current mapping with a configure event.
@@ -50,6 +52,8 @@ pub struct WaylandWindow {
     role: RefCell<SurfaceRole>,
     title: RefCell<String>,
     frame: FrameState,
+    /// Fractional scaling objects; `None` means integer `wl_surface` buffer scaling.
+    scaling: Option<scale::SurfaceScaling>,
 }
 
 impl WaylandWindow {
@@ -58,6 +62,7 @@ impl WaylandWindow {
             .map_err(|e| format!("cannot create a wl_surface: {e}"))?;
         let wl_surface = surface.wl_surface().clone();
         let renderer = WindowRenderer::new(&ctx, &wl_surface)?;
+        let scaling = ctx.fractional_scaling.as_ref().map(|f| f.for_surface(&wl_surface, &ctx.qh));
 
         let this = Rc::new_cyclic(|weak: &Weak<Self>| {
             let adapter: Weak<dyn WindowAdapter> = weak.clone();
@@ -69,7 +74,8 @@ impl WaylandWindow {
                 role_object: RefCell::new(RoleObject::Unassigned(Some(surface))),
                 role: RefCell::default(),
                 title: RefCell::default(),
-                frame: FrameState { scale: Cell::new(1), ..Default::default() },
+                frame: FrameState { scale: Cell::new(1.0), ..Default::default() },
+                scaling,
             }
         });
         ctx.windows.borrow_mut().push(Rc::downgrade(&this));

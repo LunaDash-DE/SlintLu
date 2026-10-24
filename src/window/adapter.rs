@@ -21,8 +21,8 @@ impl WindowAdapter for WaylandWindow {
 
     fn size(&self) -> PhysicalSize {
         let (w, h) = self.frame.logical_size.get();
-        let scale = self.frame.scale.get().max(1) as u32;
-        PhysicalSize::new(w * scale, h * scale)
+        let scale = self.frame.scale.get();
+        PhysicalSize::new(super::scale::physical(w, scale), super::scale::physical(h, scale))
     }
 
     fn renderer(&self) -> &dyn Renderer {

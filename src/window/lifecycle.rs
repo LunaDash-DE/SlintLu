@@ -117,12 +117,26 @@ impl WaylandWindow {
         self.frame.dirty.set(true);
     }
 
+    /// Integer scale from `wl_surface.preferred_buffer_scale`; ignored when fractional scaling
+    /// is in use.
     pub(crate) fn set_scale_factor(&self, scale: i32) {
-        let scale = scale.max(1);
+        if self.scaling.is_none() {
+            self.apply_scale(scale.max(1) as f32);
+        }
+    }
+
+    /// Scale from `wp_fractional_scale_v1`.
+    pub(crate) fn set_fractional_scale(&self, scale: f32) {
+        if scale > 0.0 {
+            self.apply_scale(scale);
+        }
+    }
+
+    fn apply_scale(&self, scale: f32) {
         if self.frame.scale.replace(scale) == scale {
             return;
         }
-        self.dispatch(WindowEvent::ScaleFactorChanged { scale_factor: scale as f32 });
+        self.dispatch(WindowEvent::ScaleFactorChanged { scale_factor: scale });
         let (w, h) = self.frame.logical_size.get();
         self.dispatch(WindowEvent::Resized { size: LogicalSize::new(w as f32, h as f32) });
         self.frame.dirty.set(true);

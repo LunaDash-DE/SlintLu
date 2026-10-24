@@ -71,6 +71,7 @@ impl WaylandPlatform {
             xdg_shell,
             shm,
             clipboard: crate::clipboard::ClipboardState::new(&globals, &qh),
+            fractional_scaling: crate::window::scale::FractionalScaling::bind(&globals, &qh),
             renderer: config.renderer,
             windows: Default::default(),
             outputs: Default::default(),

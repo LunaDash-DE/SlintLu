@@ -30,6 +30,7 @@ pub(crate) struct Context {
     pub xdg_shell: Option<XdgShell>,
     pub shm: Shm,
     pub clipboard: crate::clipboard::ClipboardState,
+    pub fractional_scaling: Option<crate::window::scale::FractionalScaling>,
     pub renderer: RendererKind,
     pub windows: RefCell<Vec<Weak<WaylandWindow>>>,
     pub outputs: RefCell<Vec<(OutputInfo, WlOutput)>>,
