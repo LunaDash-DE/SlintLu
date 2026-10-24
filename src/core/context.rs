@@ -29,10 +29,12 @@ pub(crate) struct Context {
     pub windows: RefCell<Vec<Weak<WaylandWindow>>>,
     pub outputs: RefCell<Vec<(OutputInfo, WlOutput)>>,
     pub output_listeners: RefCell<Vec<Rc<dyn Fn()>>>,
+    /// Shared EGL display: `None` until first use, `Some(None)` if initialisation failed.
     #[cfg(feature = "opengl")]
-    pub egl: std::cell::OnceCell<Option<Rc<crate::render::egl::EglDisplay>>>,
+    pub egl: RefCell<Option<Option<Rc<crate::render::egl::EglDisplay>>>>,
+    /// Shared wgpu device, with the same states as `egl`.
     #[cfg(feature = "vulkan")]
-    pub gpu: std::cell::OnceCell<Option<Rc<crate::render::gpu::GpuContext>>>,
+    pub gpu: RefCell<Option<Option<Rc<crate::render::gpu::GpuContext>>>>,
 }
 
 impl Context {
@@ -44,6 +46,16 @@ impl Context {
         let mut windows = self.windows.borrow_mut();
         windows.retain(|w| w.strong_count() > 0);
         windows.iter().filter_map(Weak::upgrade).collect()
+    }
+
+    /// Drops the shared graphics contexts. Windows keep their own references; new windows
+    /// initialise them again. Must happen before thread-local destructors run, because wgpu
+    /// and EGL teardown use thread-locals themselves.
+    pub fn release_graphics(&self) {
+        #[cfg(feature = "opengl")]
+        self.egl.borrow_mut().take();
+        #[cfg(feature = "vulkan")]
+        self.gpu.borrow_mut().take();
     }
 
     /// Draws every window that asked for a redraw and is ready for a new frame.

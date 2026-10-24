@@ -44,6 +44,14 @@ pub fn with<R>(f: impl FnOnce(&Rc<ShellHost>) -> R) -> Option<R> {
     Some(f(&host))
 }
 
+/// Drops all windows and the host while the rest of the thread's state (renderer caches) is
+/// still alive. Call after the event loop has returned.
+pub fn shutdown() {
+    if let Some(host) = HOST.with(|h| h.borrow_mut().take()) {
+        host.entries.borrow_mut().clear();
+    }
+}
+
 /// Runs `f` on the Slint event loop with the host. Usable from any thread.
 pub fn post(f: impl FnOnce(&Rc<ShellHost>) + Send + 'static) {
     let _ = slint::invoke_from_event_loop(move || {
@@ -102,8 +110,57 @@ impl ShellHost {
         self.bridge.set_callback(global, callback, handler);
     }
 
+    /// Reads a global property from the first window that has it.
+    pub fn global_property(&self, global: &str, property: &str) -> Option<Value> {
+        self.entries
+            .borrow()
+            .iter()
+            .find_map(|e| e.instance.get_global_property(global, property).ok())
+    }
+
+    /// Sets a global property in every window (for globals the shell itself owns, which are
+    /// per window). Fails if no window has it.
+    pub fn set_global_everywhere(
+        &self,
+        global: &str,
+        property: &str,
+        value: Value,
+    ) -> Result<(), String> {
+        let mut last_error = format!("no window exports the global {global}");
+        let mut any = false;
+        self.each_instance(|instance| {
+            match instance.set_global_property(global, property, value.clone()) {
+                Ok(()) => any = true,
+                Err(e) => last_error = format!("cannot set {global}.{property}: {e}"),
+            }
+        });
+        if any { Ok(()) } else { Err(last_error) }
+    }
+
+    /// Invokes a global callback or function. Natively implemented callbacks run once; the
+    /// shell's own ones run in every window (their state is per window). Returns the first
+    /// result.
+    pub fn invoke_global(&self, global: &str, name: &str, args: &[Value]) -> Option<Value> {
+        if let Some(handler) = self.bridge.callback(global, name) {
+            return Some(handler(args));
+        }
+        let mut result = None;
+        self.each_instance(|instance| match instance.invoke_global(global, name, args) {
+            Ok(value) => {
+                result.get_or_insert(value);
+            }
+            Err(e) => log::debug!("cannot invoke {global}.{name}: {e}"),
+        });
+        result
+    }
+
+    /// The components currently shown, with the id of their output.
+    pub fn windows(&self) -> Vec<(String, Option<u32>)> {
+        self.entries.borrow().iter().map(|e| (e.component.clone(), e.output)).collect()
+    }
+
     /// Runs `f` for every window instance, e.g. for per-instance values like formatted time.
-    pub fn each_instance(&self, f: impl Fn(&ComponentInstance)) {
+    pub fn each_instance(&self, f: impl FnMut(&ComponentInstance)) {
         let instances: Vec<_> =
             self.entries.borrow().iter().map(|e| e.instance.clone_strong()).collect();
         instances.iter().for_each(f);

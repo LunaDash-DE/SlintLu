@@ -46,13 +46,14 @@ impl GpuContext {
         ctx: &Context,
         surface: &WlSurface,
     ) -> Result<(Rc<Self>, wgpu::Surface<'static>), String> {
-        if let Some(gpu) = ctx.gpu.get() {
-            let gpu = gpu.clone().ok_or("Vulkan initialisation failed earlier")?;
+        let cached = ctx.gpu.borrow().clone();
+        if let Some(gpu) = cached {
+            let gpu = gpu.ok_or("Vulkan initialisation failed earlier")?;
             let wgpu_surface = create_surface(&gpu.instance, ctx, surface)?;
             return Ok((gpu, wgpu_surface));
         }
         let result = Self::new(ctx, surface);
-        let _ = ctx.gpu.set(result.as_ref().ok().map(|(gpu, _)| gpu.clone()));
+        *ctx.gpu.borrow_mut() = Some(result.as_ref().ok().map(|(gpu, _)| gpu.clone()));
         result
     }
 

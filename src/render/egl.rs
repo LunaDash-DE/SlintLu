@@ -32,7 +32,8 @@ impl EglDisplay {
     /// Initialises EGL once per connection; later calls return the cached result.
     pub fn shared(ctx: &Context) -> Option<Rc<Self>> {
         ctx.egl
-            .get_or_init(|| {
+            .borrow_mut()
+            .get_or_insert_with(|| {
                 Self::new(ctx)
                     .inspect_err(|e| log::warn!("cannot initialise EGL: {e}"))
                     .ok()

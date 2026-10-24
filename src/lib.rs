@@ -43,6 +43,7 @@ pub mod audio;
 pub mod compositors;
 mod core;
 mod input;
+pub mod ipc;
 mod output;
 mod render;
 mod shell;

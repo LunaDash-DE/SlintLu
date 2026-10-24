@@ -19,6 +19,9 @@ pub fn run(args: RunArgs) -> Result<(), String> {
     if !host.load() {
         return Err("the shell configuration has errors".into());
     }
+    let _ipc = crate::scripting::ipc::Server::start(&slintlu::ipc::socket_path())
+        .inspect_err(|e| log::warn!("IPC disabled: {e}"))
+        .ok();
     slintlu::on_outputs_changed(|| {
         host::with(|host| host.outputs_changed());
     });
@@ -37,5 +40,8 @@ pub fn run(args: RunArgs) -> Result<(), String> {
         .ok()
     };
 
-    slint::run_event_loop_until_quit().map_err(|e| e.to_string())
+    let result = slint::run_event_loop_until_quit().map_err(|e| e.to_string());
+    drop(host);
+    host::shutdown();
+    result
 }

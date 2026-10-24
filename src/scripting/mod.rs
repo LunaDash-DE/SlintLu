@@ -5,6 +5,8 @@ mod bridge;
 mod compiler;
 pub mod globals;
 pub mod host;
+pub mod ipc;
+mod json;
 pub mod library;
 mod panel;
 

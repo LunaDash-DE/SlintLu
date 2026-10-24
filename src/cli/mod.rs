@@ -2,6 +2,7 @@
 
 mod check;
 mod init;
+mod msg;
 mod outputs;
 mod run;
 
@@ -48,6 +49,11 @@ enum Command {
     },
     /// Print the directory holding the `@slintlu` library, for editor (slint-lsp) setup.
     LibraryPath,
+    /// Send a command to the running shell.
+    Msg {
+        #[command(subcommand)]
+        command: msg::MsgCommand,
+    },
 }
 
 #[derive(Args, Debug, Clone)]
@@ -74,6 +80,7 @@ pub fn main() -> ExitCode {
         Some(Command::Check { path }) => check::check(path),
         Some(Command::Outputs) => outputs::outputs(),
         Some(Command::Init { dir, force }) => init::init(dir, force),
+        Some(Command::Msg { command }) => msg::msg(command),
         Some(Command::LibraryPath) => crate::scripting::library::install()
             .map(|_| println!("{}", crate::scripting::library::dir().display()))
             .map_err(|e| e.to_string()),
@@ -115,6 +122,13 @@ mod tests {
         assert!(cli.command.is_none());
         assert_eq!(cli.run.renderer, RendererKind::Vulkan);
         assert_eq!(cli.run.config.as_deref(), Some(std::path::Path::new("x.slint")));
+    }
+
+    #[test]
+    fn msg_parses_values() {
+        let cli =
+            Cli::try_parse_from(["slintlu", "msg", "call", "Audio.set-volume", "0.5"]).unwrap();
+        assert!(matches!(cli.command, Some(Command::Msg { .. })));
     }
 
     #[test]

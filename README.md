@@ -67,6 +67,7 @@ editor's Slint extension to get completion for `@slintlu`.
 | `slintlu init [--dir DIR] [--force]` | create a starter configuration |
 | `slintlu outputs` | list monitors |
 | `slintlu library-path` | print where the `@slintlu` library lives |
+| `slintlu msg …` | control the running shell: `reload`, `quit`, `get`, `set`, `toggle`, `call` ([IPC](docs/IPC.md)) |
 
 ## Project layout
 
@@ -79,6 +80,7 @@ src/
 ├── shell/        layer-shell and xdg-shell roles
 ├── window/       the Slint window adapter: lifecycle and frame pacing
 ├── compositors/  compositor detection; niri, Hyprland and Sway IPC
+├── ipc/          the shell's control socket: protocol and client
 ├── audio/        volume and devices (PipeWire / PulseAudio via pactl)
 ├── system/       CPU, memory, disks, temperatures, batteries, network, host
 ├── time/         clock formatting
@@ -96,7 +98,7 @@ scripts/          headless sway integration test
 - [x] Wayland platform: layer-shell, xdg-shell, outputs, input, three renderers
 - [x] Runtime: interpreter, per-screen panels, hot reload, CLI
 - [x] Services: clock, system stats, battery, network traffic, audio, workspaces and windows (niri / Hyprland / Sway)
-- [ ] IPC: control a running shell (`slintlu msg …`) from keybindings and scripts
+- [x] IPC: control a running shell (`slintlu msg …`) from keybindings and scripts — see [docs/IPC.md](docs/IPC.md)
 - [ ] D-Bus: notifications daemon, MPRIS, NetworkManager, power (logind), dark mode (portal)
 - [ ] i18n, application launcher, clipboard, lock screen (ext-session-lock + PAM), idle, theming
 

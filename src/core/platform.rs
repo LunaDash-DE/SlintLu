@@ -150,6 +150,7 @@ impl Platform for WaylandPlatform {
 
         *self.event_loop.borrow_mut() = Some(event_loop);
         *self.state.borrow_mut() = Some(state);
+        self.ctx.release_graphics();
         result
     }
 

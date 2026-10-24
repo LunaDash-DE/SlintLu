@@ -28,6 +28,11 @@ impl Bridge {
         self.callbacks.borrow_mut().insert((global.into(), callback.into()), handler);
     }
 
+    /// The native handler of a global callback, if one is registered.
+    pub fn callback(&self, global: &str, callback: &str) -> Option<Handler> {
+        self.callbacks.borrow().get(&(global.to_owned(), callback.to_owned())).cloned()
+    }
+
     /// Applies everything registered so far to a new instance.
     pub fn apply(&self, instance: &ComponentInstance) {
         for ((global, property), value) in self.properties.borrow().iter() {
