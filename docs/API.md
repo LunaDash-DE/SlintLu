@@ -204,6 +204,25 @@ The notification daemon (org.freedesktop.Notifications). Unavailable when anothe
 | `dismiss-all()` | callback | call |  |
 | `invoke(id: int, action-key: string)` | callback | call | Runs one of its actions ("default" for clicking the notification itself). |
 
+### Polkit
+
+The polkit authentication agent: show a dialog while `active` (e.g. a PanelWindow on the overlay layer with `keyboard-mode: exclusive` and `shown: Polkit.active`).
+
+| Member | Type | Access | Description |
+|---|---|---|---|
+| `available` | `bool` | read | SlintLu is the session's polkit agent (no other agent was registered). |
+| `active` | `bool` | read | A request is waiting for the user. |
+| `message` | `string` | read | Why authentication is needed, from the application. |
+| `action-id` | `string` | read |  |
+| `icon-name` | `string` | read |  |
+| `user` | `string` | read | Whose password is asked for. |
+| `prompt` | `string` | read | The helper's question, normally "Password: ". |
+| `echo` | `bool` | read | Show what is typed (the question is not a password). |
+| `error` | `string` | read | An error from the last attempt, e.g. "Authentication failed, please try again." |
+| `authenticating` | `bool` | read | An answer is being checked. |
+| `respond(text: string)` | callback | call | Answers the prompt. |
+| `cancel()` | callback | call |  |
+
 ### Power
 
 Session and power actions through systemd-logind.

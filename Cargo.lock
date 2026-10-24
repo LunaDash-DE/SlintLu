@@ -4039,6 +4039,7 @@ dependencies = [
  "chrono",
  "clap",
  "env_logger",
+ "futures-channel",
  "futures-util",
  "khronos-egl",
  "libc",

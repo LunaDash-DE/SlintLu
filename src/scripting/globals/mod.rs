@@ -11,6 +11,7 @@ mod idle;
 mod media;
 mod network;
 mod notifications;
+mod polkit;
 mod power;
 mod session;
 mod shell;
@@ -51,6 +52,7 @@ pub fn install(host: &Rc<ShellHost>, info: &ShellInfo) {
     idle::install(host);
     hardware::install(host);
     tray::install(host);
+    polkit::install(host);
 }
 
 /// Releases state that must not outlive the event loop.
@@ -60,6 +62,7 @@ pub fn shutdown() {
     icons::shutdown();
     idle::shutdown();
     tray::shutdown();
+    polkit::shutdown();
 }
 
 /// Fills per-window values (such as the formatted time) right after windows are created.

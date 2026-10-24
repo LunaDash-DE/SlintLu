@@ -98,7 +98,7 @@ src/
 ├── idle/         ext-idle-notify and idle inhibition
 ├── clipboard/    copy / paste and primary selection
 ├── launcher/     desktop entries, search, launch history, launching
-├── security/     session lock and PAM authentication
+├── security/     session lock, PAM authentication, polkit agent
 ├── audio/        volume and devices (PipeWire / PulseAudio via pactl)
 ├── system/       CPU, memory, disks, temperatures, batteries, network, host
 ├── theme/        palettes, theme.json, pywal
@@ -121,7 +121,7 @@ scripts/          headless sway integration test
 - [x] D-Bus: notification daemon, media players (MPRIS), NetworkManager, power (logind), dark mode and accent colour (portal)
 - [x] i18n: `@tr()` with `.po` files compiled at runtime and live language switching — see [docs/I18N.md](docs/I18N.md)
 - [x] Applications and icons: desktop entries, fuzzy search ranked by usage, launching (terminal apps, actions), freedesktop icon themes
-- [x] Lock screen: ext-session-lock, PAM, logind lock / suspend integration — see [docs/LOCKSCREEN.md](docs/LOCKSCREEN.md)
+- [x] Lock screen (ext-session-lock, PAM, logind) and polkit authentication agent — see [docs/LOCKSCREEN.md](docs/LOCKSCREEN.md)
 - [x] Clipboard and primary selection, idle detection / inhibition / auto-lock, fractional scaling
 - [x] Screen brightness (sysfs + logind, no root) and Bluetooth (BlueZ, never auto-started)
 - [x] Theming: built-in palettes, `theme.json`, pywal, desktop dark mode and accent — see [docs/THEMING.md](docs/THEMING.md)

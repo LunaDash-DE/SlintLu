@@ -11,6 +11,7 @@ const FILES: &[(&str, &str)] = &[
     ("launcher.slint", include_str!("../../examples/starter/launcher.slint")),
     ("lock.slint", include_str!("../../examples/starter/lock.slint")),
     ("tray.slint", include_str!("../../examples/starter/tray.slint")),
+    ("polkit.slint", include_str!("../../examples/starter/polkit.slint")),
 ];
 
 pub fn init(dir: Option<PathBuf>, force: bool) -> Result<(), String> {

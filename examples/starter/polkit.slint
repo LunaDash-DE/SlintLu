@@ -1,0 +1,75 @@
+// The administrator password dialog (polkit), shown when an application needs rights.
+
+import { PanelWindow, Polkit, Theme, Shell, Workspaces } from "@slintlu";
+
+export component PolkitDialog inherits PanelWindow {
+    namespace: "slintlu-polkit";
+    layer: overlay;
+    keyboard-mode: exclusive;
+    exclusive-mode: ignore;
+    preferred-width: 440px;
+    preferred-height: 230px;
+    shown: Polkit.active && (Workspaces.focused-output == "" || Workspaces.focused-output == Shell.screen.name);
+
+    changed shown => {
+        if self.shown { answer.text = ""; answer.focus(); }
+    }
+
+    Rectangle {
+        border-radius: Theme.radius;
+        background: Theme.background.with-alpha(0.97);
+        border-width: 1px;
+        border-color: Theme.border;
+        VerticalLayout {
+            padding: 20px;
+            spacing: 12px;
+            Text { text: "Authentication required"; color: Theme.text; font-size: 17px; font-weight: 700; }
+            Text { text: Polkit.message; color: Theme.text-muted; wrap: word-wrap; }
+            Rectangle {
+                height: 40px;
+                border-radius: 8px;
+                background: Theme.surface;
+                border-width: 1px;
+                border-color: Polkit.error != "" ? Theme.red : answer.has-focus ? Theme.accent : Theme.border;
+                answer := TextInput {
+                    x: 12px;
+                    width: parent.width - 24px;
+                    color: Theme.text;
+                    vertical-alignment: center;
+                    input-type: Polkit.echo ? InputType.text : InputType.password;
+                    enabled: !Polkit.authenticating;
+                    accepted => { Polkit.respond(self.text); self.text = ""; }
+                    key-pressed(event) => {
+                        if event.text == Key.Escape { Polkit.cancel(); return accept; }
+                        reject
+                    }
+                }
+                Text {
+                    x: 12px;
+                    height: parent.height;
+                    visible: answer.text == "";
+                    vertical-alignment: center;
+                    color: Theme.text-muted.with-alpha(0.7);
+                    text: Polkit.authenticating ? "Checking…" : (Polkit.prompt != "" ? Polkit.prompt : "Password") + " (" + Polkit.user + ")";
+                }
+            }
+            Text { text: Polkit.error; color: Theme.red; }
+            HorizontalLayout {
+                alignment: end;
+                spacing: 8px;
+                Rectangle {
+                    width: 90px; height: 32px; border-radius: 8px;
+                    background: cancel-touch.has-hover ? Theme.surface-alt : Theme.surface;
+                    Text { text: "Cancel"; color: Theme.text; }
+                    cancel-touch := TouchArea { clicked => { Polkit.cancel(); } }
+                }
+                Rectangle {
+                    width: 110px; height: 32px; border-radius: 8px;
+                    background: ok-touch.has-hover ? Theme.accent.brighter(0.15) : Theme.accent;
+                    Text { text: "Authenticate"; color: Theme.background; }
+                    ok-touch := TouchArea { clicked => { Polkit.respond(answer.text); answer.text = ""; } }
+                }
+            }
+        }
+    }
+}

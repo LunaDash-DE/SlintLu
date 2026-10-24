@@ -59,3 +59,12 @@ which PAM denies, so tests never count as failed logins for `pam_faillock`).
 If the shell crashes while locked, the compositor keeps the session locked and shows its own
 fallback (often a solid colour). Switch to a TTY, log in and restart `slintlu`, or unlock with
 `loginctl unlock-session`.
+
+## Polkit authentication agent
+
+SlintLu registers as the session's polkit agent (when no other agent, such as polkit-gnome or
+another shell, is registered) and fills the `Polkit` global; show a dialog while
+`Polkit.active` — see `examples/starter/polkit.slint`. Passwords are checked by polkit's own
+helper through `/run/polkit/agent-helper.socket` (polkit ≥ 125) or the setuid
+`polkit-agent-helper-1`, so SlintLu needs no privileges. `examples/polkit_cancel.rs` exercises
+the agent without entering a password.

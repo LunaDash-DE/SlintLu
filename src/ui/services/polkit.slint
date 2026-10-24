@@ -1,0 +1,26 @@
+// The polkit authentication agent: show a dialog while `active` (e.g. a PanelWindow on the
+// overlay layer with `keyboard-mode: exclusive` and `shown: Polkit.active`).
+export global Polkit {
+    // SlintLu is the session's polkit agent (no other agent was registered).
+    in property <bool> available;
+    // A request is waiting for the user.
+    in property <bool> active;
+    // Why authentication is needed, from the application.
+    in property <string> message;
+    in property <string> action-id;
+    in property <string> icon-name;
+    // Whose password is asked for.
+    in property <string> user;
+    // The helper's question, normally "Password: ".
+    in property <string> prompt;
+    // Show what is typed (the question is not a password).
+    in property <bool> echo;
+    // An error from the last attempt, e.g. "Authentication failed, please try again."
+    in property <string> error;
+    // An answer is being checked.
+    in property <bool> authenticating;
+
+    // Answers the prompt.
+    callback respond(text: string);
+    callback cancel();
+}
