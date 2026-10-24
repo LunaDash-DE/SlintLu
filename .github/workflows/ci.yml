@@ -104,7 +104,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: cachix/install-nix-action@v31
       # Caches the Nix store between runs (GitHub Actions cache, no account needed).
-      - uses: nix-community/cache-nix-action@v6
+      - uses: nix-community/cache-nix-action@v7
         with:
           primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock', 'flake.nix', 'nix/**', 'Cargo.lock') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
