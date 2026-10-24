@@ -5,6 +5,7 @@ use std::env;
 /// A compositor SlintLu knows how to talk to beyond the core Wayland protocols.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Compositor {
+    LunaDash,
     Niri,
     Hyprland,
     Sway,
@@ -24,6 +25,9 @@ impl Compositor {
 
     fn from_env(var: impl Fn(&str) -> Option<String>) -> Self {
         // Compositor-specific IPC sockets are the most reliable signal.
+        if var("LUNADASH_CONTROL").is_some() || var("LUDASH_CONTROL").is_some() {
+            return Self::LunaDash;
+        }
         if var("NIRI_SOCKET").is_some() {
             return Self::Niri;
         }
@@ -37,6 +41,7 @@ impl Compositor {
         desktop
             .split(':')
             .find_map(|name| match name {
+                "lunadash" => Some(Self::LunaDash),
                 "niri" => Some(Self::Niri),
                 "hyprland" => Some(Self::Hyprland),
                 "sway" => Some(Self::Sway),
@@ -52,6 +57,7 @@ impl Compositor {
 
     pub fn as_str(self) -> &'static str {
         match self {
+            Self::LunaDash => "lunadash",
             Self::Niri => "niri",
             Self::Hyprland => "hyprland",
             Self::Sway => "sway",
@@ -89,6 +95,10 @@ mod tests {
             Compositor::Hyprland
         );
         assert_eq!(detect(&[("SWAYSOCK", "/run/sway.sock")]), Compositor::Sway);
+        assert_eq!(
+            detect(&[("LUNADASH_CONTROL", "/run/user/1/lunadash-0-control")]),
+            Compositor::LunaDash
+        );
     }
 
     #[test]

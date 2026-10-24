@@ -1,8 +1,16 @@
 //! Copy and paste (`wl_data_device`) and the primary selection (middle-click paste), backing
-//! Slint's clipboard so text fields work like in any other application.
+//! Slint's clipboard so text fields work like in any other application, and a clipboard
+//! history (`wlr-data-control`).
 
 mod handlers;
+mod history;
 mod pipe;
+
+pub(crate) use history::ClipboardHistory;
+pub use history::{
+    ClipboardEntry, clear_history, copy_from_history, history, history_available,
+    on_history_changed, remove_from_history,
+};
 
 use std::cell::{Cell, RefCell};
 
@@ -22,7 +30,7 @@ use smithay_client_toolkit::reexports::protocols::wp::primary_selection::zv1::cl
 use crate::core::state::State;
 
 /// Mime types offered and accepted for text, best first.
-const TEXT_MIME_TYPES: [&str; 5] =
+pub(crate) const TEXT_MIME_TYPES: [&str; 5] =
     ["text/plain;charset=utf-8", "text/plain", "UTF8_STRING", "STRING", "TEXT"];
 
 /// Clipboard objects of the first seat and the text this client currently offers.

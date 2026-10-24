@@ -1,0 +1,21 @@
+export struct FileEntry {
+    path: string,
+    name: string,
+    is-dir: bool,
+}
+
+// Directories and images, e.g. for a wallpaper picker.
+export global Files {
+    // The home directory; paths starting with "~" are expanded everywhere.
+    in property <string> home;
+    // Increases when thumbnails finish; pass it to `thumbnail` to show them as they appear.
+    in property <int> revision;
+    // Entries of a directory, directories first. `extensions` filters files: "png,jpg,webp".
+    pure callback list(dir: string, extensions: string) -> [FileEntry];
+    pure callback exists(path: string) -> bool;
+    // The image at a path (full size; use `thumbnail` for grids).
+    pure callback image(path: string) -> image;
+    // A cached thumbnail of at most `size` pixels, generated in the background (empty until
+    // ready).
+    pure callback thumbnail(path: string, size: int, revision: int) -> image;
+}

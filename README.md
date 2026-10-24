@@ -109,14 +109,16 @@ src/
 ├── render/       software / OpenGL (EGL) / Vulkan (wgpu) renderers and fallback
 ├── shell/        layer-shell and xdg-shell roles
 ├── window/       the Slint window adapter: lifecycle and frame pacing
-├── compositors/  compositor detection; niri, Hyprland and Sway IPC
+├── compositors/  compositor detection; LunaDash, niri, Hyprland and Sway IPC
+├── files/        directory listings and cached thumbnails
+├── store/        persistent key–value settings
 ├── debug/        diagnostics for `slintlu info`
 ├── ipc/          the shell's control socket: protocol and client
 ├── dbus/         notifications, MPRIS, NetworkManager, logind, portal, BlueZ, tray
 ├── i18n/         .po parsing, .mo writing, locale detection
 ├── icons/        freedesktop icon theme lookup
 ├── idle/         ext-idle-notify and idle inhibition
-├── clipboard/    copy / paste and primary selection
+├── clipboard/    copy / paste, primary selection, clipboard history
 ├── launcher/     desktop entries, search, launch history, launching
 ├── security/     session lock, PAM authentication, polkit agent
 ├── audio/        volume and devices (PipeWire / PulseAudio via pactl)
@@ -147,6 +149,8 @@ nix/              Nix package and Home Manager module (see flake.nix)
 - [x] Screen brightness (sysfs + logind, no root) and Bluetooth (BlueZ, never auto-started)
 - [x] Theming: built-in palettes, `theme.json`, pywal, desktop dark mode and accent — see [docs/THEMING.md](docs/THEMING.md)
 - [x] System tray: StatusNotifierItem host (and watcher when none runs) with dbusmenu menus
+- [x] Persistent settings (`Store`), files and thumbnails (`Files`), calendar grids, clipboard history (wlr-data-control)
+- [x] LunaDash compositor support (workspaces and windows over its control socket)
 
 ## Development
 

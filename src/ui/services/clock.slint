@@ -1,3 +1,13 @@
+export struct CalendarDay {
+    year: int,
+    month: int,
+    day: int,
+    // Part of the requested month (not padding from a neighbouring month).
+    in-month: bool,
+    today: bool,
+    weekend: bool,
+}
+
 // The local time, updated every second.
 export global Clock {
     // Formatted with `time-format` / `date-format`.
@@ -6,8 +16,18 @@ export global Clock {
     in property <int> hour;
     in property <int> minute;
     in property <int> second;
+    in property <int> year;
+    in property <int> month;
+    in property <int> day;
+    // 1 = Monday … 7 = Sunday.
+    in property <int> weekday;
     // strftime patterns (https://docs.rs/chrono/latest/chrono/format/strftime). Change them in
     // an `init` handler, e.g. `init => { Clock.time-format = "%H:%M:%S"; }`.
     in-out property <string> time-format: "%H:%M";
     in-out property <string> date-format: "%a %e %b";
+
+    // Six weeks (42 days) covering a month, for calendar grids.
+    pure callback month-grid(year: int, month: int, monday-first: bool) -> [CalendarDay];
+    // Formats a date with a strftime pattern, e.g. format-date(2026, 10, 1, "%B %Y").
+    pure callback format-date(year: int, month: int, day: int, pattern: string) -> string;
 }

@@ -3,7 +3,9 @@
 
 mod apps;
 mod audio;
+mod clipboard;
 mod clock;
+mod files;
 mod hardware;
 mod i18n;
 mod icons;
@@ -15,6 +17,7 @@ mod polkit;
 mod power;
 mod session;
 mod shell;
+mod store;
 mod system;
 mod theme;
 mod tray;
@@ -53,6 +56,9 @@ pub fn install(host: &Rc<ShellHost>, info: &ShellInfo) {
     hardware::install(host);
     tray::install(host);
     polkit::install(host);
+    store::install(host);
+    files::install(host);
+    clipboard::install(host);
 }
 
 /// Releases state that must not outlive the event loop.

@@ -33,6 +33,9 @@ const RUNTIME_GLOBALS: &[&str] = &[
     "Bluetooth",
     "Tray",
     "Polkit",
+    "Store",
+    "Files",
+    "ClipboardHistory",
 ];
 
 /// A successful compilation and the diagnostics (warnings) that came with it.

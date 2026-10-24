@@ -30,11 +30,12 @@ wayland-client = { version = "0.31", features = ["system"] }
 bytemuck = { version = "1", features = ["derive"] }
 log = "0.4"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
-rustix = { version = "1", features = ["fs"] }
+rustix = { version = "1", features = ["fs", "pipe"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 zbus = { version = "6", default-features = false, features = ["default-rt", "proxy", "service"] }
 libc = "0.2"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp"] }
 futures-channel = "0.3"
 futures-util = { version = "0.3", default-features = false, features = ["std", "async-await-macro"] }
 
@@ -62,8 +63,13 @@ lto = "thin"
 codegen-units = 4
 strip = "debuginfo"
 
+[profile.dev]
+# Full debug info for this many crates fills disks quickly; line tables keep backtraces useful.
+debug = "line-tables-only"
+
 [profile.dev.package."*"]
 opt-level = 2
+debug = false
 
 [dev-dependencies]
 env_logger = "0.11"

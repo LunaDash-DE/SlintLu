@@ -71,6 +71,7 @@ impl WaylandPlatform {
             xdg_shell,
             shm,
             clipboard: crate::clipboard::ClipboardState::new(&globals, &qh),
+            clipboard_history: crate::clipboard::ClipboardHistory::new(&globals, &qh),
             fractional_scaling: crate::window::scale::FractionalScaling::bind(&globals, &qh),
             idle: crate::idle::IdleState::new(&globals, &qh),
             renderer: config.renderer,
@@ -104,6 +105,7 @@ impl WaylandPlatform {
         // Seats present at startup do not go through `SeatHandler::new_seat`.
         for seat in state.seat_state.seats() {
             ctx.clipboard.add_seat(&seat, &qh);
+            ctx.clipboard_history.add_seat(&seat, &qh);
             ctx.idle.set_seat(&seat);
         }
 

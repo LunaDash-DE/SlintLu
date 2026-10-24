@@ -16,6 +16,7 @@ pub const PROTOCOLS: &[(&str, &str)] = &[
     ("wp_cursor_shape_manager_v1", "cursor shapes"),
     ("wl_data_device_manager", "clipboard"),
     ("zwp_primary_selection_device_manager_v1", "middle-click paste"),
+    ("zwlr_data_control_manager_v1", "clipboard history"),
 ];
 
 /// Whether each of [`PROTOCOLS`] is offered by the compositor. Empty before [`crate::init`].

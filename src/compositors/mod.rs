@@ -2,6 +2,7 @@
 
 mod detect;
 mod hyprland;
+mod lunadash;
 mod model;
 mod niri;
 mod sway;
@@ -10,6 +11,7 @@ use std::io;
 use std::sync::Arc;
 
 pub use detect::Compositor;
+pub use lunadash::LunaDash;
 pub use model::{Action, DesktopState, Window, Workspace};
 
 /// A compositor's IPC connection.
@@ -28,6 +30,9 @@ pub fn backend(compositor: Compositor) -> Option<Arc<dyn Backend>> {
             hyprland::Hyprland::from_env().map(|b| Arc::new(b) as Arc<dyn Backend>)
         }
         Compositor::Sway => sway::Sway::from_env().map(|b| Arc::new(b) as Arc<dyn Backend>),
+        Compositor::LunaDash => {
+            lunadash::LunaDash::from_env().map(|b| Arc::new(b) as Arc<dyn Backend>)
+        }
         _ => None,
     }
 }

@@ -1,0 +1,18 @@
+export struct ClipboardEntry {
+    id: int,
+    text: string,
+    // The first line, shortened, for lists.
+    preview: string,
+}
+
+// Texts copied in this session (kept in memory only; secrets from password managers are
+// skipped). Needs wlr-data-control.
+export global ClipboardHistory {
+    in property <bool> available;
+    // Newest first.
+    in property <[ClipboardEntry]> entries;
+    // Puts an entry back on the clipboard.
+    callback copy(id: int);
+    callback remove(id: int);
+    callback clear();
+}

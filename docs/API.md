@@ -113,6 +113,18 @@ The screen backlight (laptops). External monitors are not covered.
 | `level` | `float` | read | 0..1 |
 | `set(level: float)` | callback | call |  |
 
+### ClipboardHistory
+
+Texts copied in this session (kept in memory only; secrets from password managers are skipped). Needs wlr-data-control.
+
+| Member | Type | Access | Description |
+|---|---|---|---|
+| `available` | `bool` | read |  |
+| `entries` | `[ClipboardEntry]` | read | Newest first. |
+| `copy(id: int)` | callback | call | Puts an entry back on the clipboard. |
+| `remove(id: int)` | callback | call |  |
+| `clear()` | callback | call |  |
+
 ### Clock
 
 The local time, updated every second.
@@ -124,8 +136,27 @@ The local time, updated every second.
 | `hour` | `int` | read |  |
 | `minute` | `int` | read |  |
 | `second` | `int` | read |  |
+| `year` | `int` | read |  |
+| `month` | `int` | read |  |
+| `day` | `int` | read |  |
+| `weekday` | `int` | read | 1 = Monday … 7 = Sunday. |
 | `time-format` | `string` | read / write = `"%H:%M"` | strftime patterns (https://docs.rs/chrono/latest/chrono/format/strftime). Change them in an `init` handler, e.g. `init => { Clock.time-format = "%H:%M:%S"; }`. |
 | `date-format` | `string` | read / write = `"%a %e %b"` |  |
+| `month-grid(year: int, month: int, monday-first: bool)` | callback → `[CalendarDay]` | call | Six weeks (42 days) covering a month, for calendar grids. |
+| `format-date(year: int, month: int, day: int, pattern: string)` | callback → `string` | call | Formats a date with a strftime pattern, e.g. format-date(2026, 10, 1, "%B %Y"). |
+
+### Files
+
+Directories and images, e.g. for a wallpaper picker.
+
+| Member | Type | Access | Description |
+|---|---|---|---|
+| `home` | `string` | read | The home directory; paths starting with "~" are expanded everywhere. |
+| `revision` | `int` | read | Increases when thumbnails finish; pass it to `thumbnail` to show them as they appear. |
+| `list(dir: string, extensions: string)` | callback → `[FileEntry]` | call | Entries of a directory, directories first. `extensions` filters files: "png,jpg,webp". |
+| `exists(path: string)` | callback → `bool` | call |  |
+| `image(path: string)` | callback → `image` | call | The image at a path (full size; use `thumbnail` for grids). |
+| `thumbnail(path: string, size: int, revision: int)` | callback → `image` | call | A cached thumbnail of at most `size` pixels, generated in the background (empty until ready). |
 
 ### I18n
 
@@ -268,6 +299,21 @@ Information about the running shell and actions it can perform.
 | `reload()` | callback | call | Reloads the shell configuration. |
 | `quit()` | callback | call | Exits SlintLu. |
 
+### Store
+
+Settings that survive restarts, stored per shell in $XDG_STATE_HOME/slintlu. Read reactively by passing `Store.revision`: property <string> wallpaper: Store.get-string("wallpaper", "", Store.revision);
+
+| Member | Type | Access | Description |
+|---|---|---|---|
+| `revision` | `int` | read | Increases on every change. |
+| `get-string(key: string, fallback: string, revision: int)` | callback → `string` | call |  |
+| `get-number(key: string, fallback: float, revision: int)` | callback → `float` | call |  |
+| `get-bool(key: string, fallback: bool, revision: int)` | callback → `bool` | call |  |
+| `set-string(key: string, value: string)` | callback | call |  |
+| `set-number(key: string, value: float)` | callback | call |  |
+| `set-bool(key: string, value: bool)` | callback | call |  |
+| `remove(key: string)` | callback | call |  |
+
 ### System
 
 Machine statistics, refreshed every two seconds.
@@ -398,6 +444,33 @@ Workspaces and windows of niri, Hyprland or Sway.
 | `connected` | `bool` |  |  |
 | `paired` | `bool` |  |  |
 | `battery` | `float` |  | Battery level in 0..1, or -1 when unknown. |
+
+### CalendarDay
+
+| Member | Type | Access | Description |
+|---|---|---|---|
+| `year` | `int` |  |  |
+| `month` | `int` |  |  |
+| `day` | `int` |  |  |
+| `in-month` | `bool` |  | Part of the requested month (not padding from a neighbouring month). |
+| `today` | `bool` |  |  |
+| `weekend` | `bool` |  |  |
+
+### ClipboardEntry
+
+| Member | Type | Access | Description |
+|---|---|---|---|
+| `id` | `int` |  |  |
+| `text` | `string` |  |  |
+| `preview` | `string` |  | The first line, shortened, for lists. |
+
+### FileEntry
+
+| Member | Type | Access | Description |
+|---|---|---|---|
+| `path` | `string` |  |  |
+| `name` | `string` |  |  |
+| `is-dir` | `bool` |  |  |
 
 ### MediaPlayerInfo
 

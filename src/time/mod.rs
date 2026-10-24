@@ -78,3 +78,87 @@ mod tests {
         assert!(d > Duration::ZERO && d <= Duration::from_secs(1));
     }
 }
+
+/// One cell of a month calendar.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct CalendarDay {
+    pub year: i32,
+    pub month: u32,
+    pub day: u32,
+    /// Belongs to the requested month (not a padding day of a neighbour).
+    pub in_month: bool,
+    pub today: bool,
+    pub weekend: bool,
+}
+
+/// Six weeks of days covering `month` of `year`, weeks starting on Monday (`monday_first`) or
+/// Sunday.
+pub fn month_grid(
+    year: i32,
+    month: u32,
+    monday_first: bool,
+    today: chrono::NaiveDate,
+) -> Vec<CalendarDay> {
+    use chrono::{Datelike, NaiveDate, Weekday};
+    let Some(first) = NaiveDate::from_ymd_opt(year, month.clamp(1, 12), 1) else {
+        return Vec::new();
+    };
+    let offset = if monday_first {
+        first.weekday().num_days_from_monday()
+    } else {
+        first.weekday().num_days_from_sunday()
+    };
+    let start = first - chrono::Duration::days(offset.into());
+    (0..42)
+        .map(|i| {
+            let date = start + chrono::Duration::days(i);
+            CalendarDay {
+                year: date.year(),
+                month: date.month(),
+                day: date.day(),
+                in_month: date.month() == first.month(),
+                today: date == today,
+                weekend: matches!(date.weekday(), Weekday::Sat | Weekday::Sun),
+            }
+        })
+        .collect()
+}
+
+/// Formats a calendar date with a `strftime` pattern; empty for invalid input.
+pub fn format_date(year: i32, month: u32, day: u32, pattern: &str) -> String {
+    use std::fmt::Write;
+    let Some(date) = chrono::NaiveDate::from_ymd_opt(year, month, day) else {
+        return String::new();
+    };
+    let mut out = String::new();
+    match write!(out, "{}", date.format(pattern)) {
+        Ok(()) => out,
+        Err(_) => String::new(),
+    }
+}
+
+#[cfg(test)]
+mod calendar_tests {
+    use super::*;
+    use chrono::NaiveDate;
+
+    #[test]
+    fn october_2026_starts_on_thursday() {
+        let today = NaiveDate::from_ymd_opt(2026, 10, 24).unwrap();
+        let grid = month_grid(2026, 10, true, today);
+        assert_eq!(grid.len(), 42);
+        // Monday 28 September is the first cell; 1 October is the fourth.
+        assert_eq!((grid[0].month, grid[0].day, grid[0].in_month), (9, 28, false));
+        assert_eq!((grid[3].month, grid[3].day, grid[3].in_month), (10, 1, true));
+        assert!(grid.iter().any(|d| d.today && d.day == 24));
+        assert!(grid[5].weekend && grid[6].weekend);
+        let sunday_first = month_grid(2026, 10, false, today);
+        assert_eq!((sunday_first[0].month, sunday_first[0].day), (9, 27));
+    }
+
+    #[test]
+    fn formats_dates() {
+        assert_eq!(format_date(2026, 10, 24, "%B %Y"), "October 2026");
+        assert_eq!(format_date(2026, 2, 30, "%d"), "");
+    }
+}

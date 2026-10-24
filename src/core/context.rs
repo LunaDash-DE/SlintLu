@@ -30,6 +30,7 @@ pub(crate) struct Context {
     pub xdg_shell: Option<XdgShell>,
     pub shm: Shm,
     pub clipboard: crate::clipboard::ClipboardState,
+    pub clipboard_history: crate::clipboard::ClipboardHistory,
     pub fractional_scaling: Option<crate::window::scale::FractionalScaling>,
     pub idle: crate::idle::IdleState,
     pub renderer: RendererKind,

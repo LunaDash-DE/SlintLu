@@ -40,6 +40,7 @@ impl SeatHandler for State {
 
     fn new_seat(&mut self, _: &Connection, qh: &QueueHandle<Self>, seat: wl_seat::WlSeat) {
         self.ctx.clipboard.add_seat(&seat, qh);
+        self.ctx.clipboard_history.add_seat(&seat, qh);
         self.ctx.idle.set_seat(&seat);
     }
 
@@ -52,6 +53,7 @@ impl SeatHandler for State {
     ) {
         // Seats announced in the initial burst may not have gone through `new_seat` yet.
         self.ctx.clipboard.add_seat(&seat, qh);
+        self.ctx.clipboard_history.add_seat(&seat, qh);
         self.ctx.idle.set_seat(&seat);
         if capability == Capability::Keyboard && self.devices.keyboard.is_none() {
             let repeat =

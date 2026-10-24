@@ -40,11 +40,12 @@
 //! [smithay-client-toolkit]: https://docs.rs/smithay-client-toolkit
 
 pub mod audio;
-mod clipboard;
+pub mod clipboard;
 pub mod compositors;
 mod core;
 pub mod dbus;
 pub mod debug;
+pub mod files;
 pub mod i18n;
 pub mod icons;
 pub mod idle;
@@ -55,6 +56,7 @@ mod output;
 mod render;
 pub mod security;
 mod shell;
+pub mod store;
 pub mod system;
 pub mod theme;
 pub mod time;
