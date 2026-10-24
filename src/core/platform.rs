@@ -72,6 +72,7 @@ impl WaylandPlatform {
             shm,
             clipboard: crate::clipboard::ClipboardState::new(&globals, &qh),
             fractional_scaling: crate::window::scale::FractionalScaling::bind(&globals, &qh),
+            idle: crate::idle::IdleState::new(&globals, &qh),
             renderer: config.renderer,
             windows: Default::default(),
             outputs: Default::default(),
@@ -97,6 +98,11 @@ impl WaylandPlatform {
                 .map_err(|e| format!("wayland roundtrip failed: {e}"))?;
         }
         crate::output::refresh(&ctx, &state.output_state);
+        // Seats present at startup do not go through `SeatHandler::new_seat`.
+        for seat in state.seat_state.seats() {
+            ctx.clipboard.add_seat(&seat, &qh);
+            ctx.idle.set_seat(&seat);
+        }
 
         WaylandSource::new(conn, event_queue)
             .insert(event_loop.handle())

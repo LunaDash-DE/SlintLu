@@ -85,6 +85,8 @@ src/
 ├── dbus/         notification daemon, MPRIS, NetworkManager, logind, desktop portal
 ├── i18n/         .po parsing, .mo writing, locale detection
 ├── icons/        freedesktop icon theme lookup
+├── idle/         ext-idle-notify and idle inhibition
+├── clipboard/    copy / paste and primary selection
 ├── launcher/     desktop entries, search, launch history, launching
 ├── security/     session lock and PAM authentication
 ├── audio/        volume and devices (PipeWire / PulseAudio via pactl)
@@ -109,7 +111,8 @@ scripts/          headless sway integration test
 - [x] i18n: `@tr()` with `.po` files compiled at runtime and live language switching — see [docs/I18N.md](docs/I18N.md)
 - [x] Applications and icons: desktop entries, fuzzy search ranked by usage, launching (terminal apps, actions), freedesktop icon themes
 - [x] Lock screen: ext-session-lock, PAM, logind lock / suspend integration — see [docs/LOCKSCREEN.md](docs/LOCKSCREEN.md)
-- [ ] Clipboard, idle, system tray, brightness, Bluetooth
+- [x] Clipboard and primary selection, idle detection / inhibition / auto-lock, fractional scaling
+- [ ] System tray, brightness, Bluetooth
 
 ## Development
 

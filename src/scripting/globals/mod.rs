@@ -6,6 +6,7 @@ mod audio;
 mod clock;
 mod i18n;
 mod icons;
+mod idle;
 mod media;
 mod network;
 mod notifications;
@@ -44,6 +45,7 @@ pub fn install(host: &Rc<ShellHost>, info: &ShellInfo) {
     icons::install(host);
     apps::install(host);
     session::install(host);
+    idle::install(host);
 }
 
 /// Releases state that must not outlive the event loop.
@@ -51,6 +53,7 @@ pub fn shutdown() {
     notifications::shutdown();
     apps::shutdown();
     icons::shutdown();
+    idle::shutdown();
 }
 
 /// Fills per-window values (such as the formatted time) right after windows are created.

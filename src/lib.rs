@@ -46,6 +46,7 @@ mod core;
 pub mod dbus;
 pub mod i18n;
 pub mod icons;
+pub mod idle;
 mod input;
 pub mod ipc;
 pub mod launcher;

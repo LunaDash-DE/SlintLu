@@ -96,6 +96,11 @@ impl WaylandWindow {
         self.renderer.kind()
     }
 
+    /// Whether the window is currently shown.
+    pub fn is_shown(&self) -> bool {
+        self.frame.shown.get() && self.frame.configured.get()
+    }
+
     /// The current role.
     pub fn role(&self) -> SurfaceRole {
         self.role.borrow().clone()
