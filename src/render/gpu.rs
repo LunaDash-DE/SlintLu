@@ -66,12 +66,22 @@ impl GpuContext {
         let instance = wgpu::Instance::new(descriptor);
         let wgpu_surface = create_surface(&instance, ctx, surface)?;
 
-        let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
-            power_preference: wgpu::PowerPreference::LowPower,
-            compatible_surface: Some(&wgpu_surface),
-            ..Default::default()
-        }))
-        .map_err(|e| format!("no Vulkan adapter: {e}"))?;
+        // Prefer a real GPU; fall back to a software implementation (e.g. lavapipe in virtual
+        // machines and CI) when no hardware adapter can present to this surface.
+        let request = |force_fallback_adapter| {
+            pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
+                power_preference: wgpu::PowerPreference::LowPower,
+                compatible_surface: Some(&wgpu_surface),
+                force_fallback_adapter,
+                ..Default::default()
+            }))
+        };
+        let adapter = request(false)
+            .or_else(|e| {
+                log::debug!("no hardware Vulkan adapter ({e}), trying a fallback adapter");
+                request(true)
+            })
+            .map_err(|e| format!("no Vulkan adapter: {e}"))?;
         let info = adapter.get_info();
         log::info!(
             "Vulkan adapter: {} ({:?}, driver {})",

@@ -111,8 +111,8 @@ jobs:
       - uses: actions/checkout@v7
       - uses: awalsh128/cache-apt-pkgs-action@v1
         with:
-          packages: ${{ env.BUILD_PACKAGES }} sway grim dbus libnotify-bin fonts-dejavu-core libegl1 libgles2 libegl-mesa0 mesa-vulkan-drivers libvulkan1
-          version: headless-2
+          packages: ${{ env.BUILD_PACKAGES }} sway grim dbus libnotify-bin fonts-dejavu-core libegl1 libgles2 libegl-mesa0 libgl1-mesa-dri mesa-vulkan-drivers libvulkan1
+          version: headless-3
       - uses: dtolnay/rust-toolchain@stable
       - uses: extractions/setup-just@v4
       - uses: Swatinem/rust-cache@v2
