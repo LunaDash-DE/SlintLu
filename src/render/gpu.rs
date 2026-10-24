@@ -104,6 +104,25 @@ impl GpuContext {
     }
 }
 
+/// Lists Vulkan adapters (for diagnostics).
+pub(crate) fn probe() -> Result<String, String> {
+    let mut descriptor = wgpu::InstanceDescriptor::new_without_display_handle_from_env();
+    descriptor.backends = wgpu::Backends::VULKAN;
+    let instance = wgpu::Instance::new(descriptor);
+    let adapters = pollster::block_on(instance.enumerate_adapters(wgpu::Backends::VULKAN));
+    if adapters.is_empty() {
+        return Err("no Vulkan adapter (is a Vulkan driver installed?)".into());
+    }
+    Ok(adapters
+        .iter()
+        .map(|a| {
+            let info = a.get_info();
+            format!("{} ({:?})", info.name, info.device_type)
+        })
+        .collect::<Vec<_>>()
+        .join(", "))
+}
+
 /// One window's swapchain plus its FemtoVG renderer.
 pub(crate) struct GpuWindow {
     pub renderer: FemtoVGWGPURenderer,

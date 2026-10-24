@@ -40,6 +40,7 @@ pub fn run(args: RunArgs) -> Result<(), String> {
         .ok()
     };
 
+    super::signals::install();
     let result = slint::run_event_loop_until_quit().map_err(|e| e.to_string());
     drop(host);
     host::shutdown();

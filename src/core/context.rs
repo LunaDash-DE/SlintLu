@@ -33,6 +33,8 @@ pub(crate) struct Context {
     pub fractional_scaling: Option<crate::window::scale::FractionalScaling>,
     pub idle: crate::idle::IdleState,
     pub renderer: RendererKind,
+    /// Interface names of every global the compositor advertised at startup.
+    pub globals: Vec<String>,
     pub windows: RefCell<Vec<Weak<WaylandWindow>>>,
     pub outputs: RefCell<Vec<(OutputInfo, WlOutput)>>,
     pub output_listeners: RefCell<Vec<Rc<dyn Fn()>>>,

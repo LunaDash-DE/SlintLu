@@ -104,6 +104,21 @@ impl EglDisplay {
     }
 }
 
+/// Loads EGL and initialises a display on the current connection (for diagnostics).
+pub(crate) fn probe() -> Result<String, String> {
+    let ctx = crate::core::context::current().ok_or("the platform is not running")?;
+    let display = EglDisplay::new(&ctx)?;
+    let vendor = display
+        .egl
+        .query_string(Some(display.display), egl::VENDOR)
+        .map(|s| s.to_string_lossy().into_owned());
+    let version = display
+        .egl
+        .query_string(Some(display.display), egl::VERSION)
+        .map(|s| s.to_string_lossy().into_owned());
+    Ok(format!("EGL {} ({})", version.unwrap_or_default(), vendor.unwrap_or_default()))
+}
+
 /// A GL context bound to one window's surface.
 pub(crate) struct EglWindow {
     display: Rc<EglDisplay>,

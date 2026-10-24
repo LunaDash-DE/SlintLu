@@ -74,6 +74,9 @@ impl WaylandPlatform {
             fractional_scaling: crate::window::scale::FractionalScaling::bind(&globals, &qh),
             idle: crate::idle::IdleState::new(&globals, &qh),
             renderer: config.renderer,
+            globals: globals
+                .contents()
+                .with_list(|list| list.iter().map(|g| g.interface.clone()).collect()),
             windows: Default::default(),
             outputs: Default::default(),
             output_listeners: Default::default(),

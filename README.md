@@ -59,6 +59,12 @@ export component Bar inherits PanelWindow {
 Run `slintlu library-path` and add the printed directory as the `slintlu` library path in your
 editor's Slint extension to get completion for `@slintlu`.
 
+## Running at login
+
+Start `slintlu` from your compositor (`spawn-at-startup "slintlu"` in niri,
+`exec-once = slintlu` in Hyprland, `exec slintlu` in Sway) or as a systemd user service with
+[`dist/slintlu.service`](dist/slintlu.service). `SIGTERM` quits cleanly and `SIGHUP` reloads.
+
 ## Command line
 
 | Command | Purpose |
@@ -67,6 +73,7 @@ editor's Slint extension to get completion for `@slintlu`.
 | `slintlu check [PATH]` | compile a configuration and print diagnostics |
 | `slintlu init [--dir DIR] [--force]` | create a starter configuration |
 | `slintlu outputs` | list monitors |
+| `slintlu info` | compatibility report: protocols, renderers, desktop services |
 | `slintlu library-path` | print where the `@slintlu` library lives |
 | `slintlu msg …` | control the running shell: `reload`, `quit`, `get`, `set`, `toggle`, `call` ([IPC](docs/IPC.md)) |
 
@@ -81,6 +88,7 @@ src/
 ├── shell/        layer-shell and xdg-shell roles
 ├── window/       the Slint window adapter: lifecycle and frame pacing
 ├── compositors/  compositor detection; niri, Hyprland and Sway IPC
+├── debug/        diagnostics for `slintlu info`
 ├── ipc/          the shell's control socket: protocol and client
 ├── dbus/         notifications, MPRIS, NetworkManager, logind, portal, BlueZ, tray
 ├── i18n/         .po parsing, .mo writing, locale detection

@@ -44,6 +44,7 @@ mod clipboard;
 pub mod compositors;
 mod core;
 pub mod dbus;
+pub mod debug;
 pub mod i18n;
 pub mod icons;
 pub mod idle;

@@ -1,10 +1,12 @@
 //! Command line interface.
 
 mod check;
+mod info;
 mod init;
 mod msg;
 mod outputs;
 mod run;
+mod signals;
 
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -38,6 +40,8 @@ enum Command {
     },
     /// List the monitors the compositor reports.
     Outputs,
+    /// Report what the compositor, graphics stack and desktop services support.
+    Info,
     /// Create a starter configuration in ~/.config/slintlu.
     Init {
         /// Directory to create the configuration in.
@@ -79,6 +83,7 @@ pub fn main() -> ExitCode {
         Some(Command::Run(args)) => run::run(args),
         Some(Command::Check { path }) => check::check(path),
         Some(Command::Outputs) => outputs::outputs(),
+        Some(Command::Info) => info::info(),
         Some(Command::Init { dir, force }) => init::init(dir, force),
         Some(Command::Msg { command }) => msg::msg(command),
         Some(Command::LibraryPath) => crate::scripting::library::install()
