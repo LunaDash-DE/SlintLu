@@ -8,8 +8,10 @@ export struct NotificationInfo {
     app-name: string,
     // Icon name or path, as sent by the application.
     app-icon: string,
-    // Path of an attached image, if any.
-    image: string,
+    // The application's icon, resolved from the icon theme.
+    icon: image,
+    // An attached image (e.g. a contact picture or screenshot), if any.
+    image: image,
     summary: string,
     body: string,
     // "low", "normal" or "critical".

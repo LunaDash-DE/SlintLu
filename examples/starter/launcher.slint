@@ -1,0 +1,129 @@
+// An application launcher. Bind a key to `slintlu msg toggle Launcher.open`, e.g. in niri:
+//     Mod+D { spawn "slintlu" "msg" "toggle" "Launcher.open"; }
+
+import { PanelWindow, Shell, Apps, AppInfo, Workspaces } from "@slintlu";
+
+export global Launcher {
+    in-out property <bool> open;
+}
+
+component Row inherits Rectangle {
+    in property <AppInfo> app;
+    in property <bool> selected;
+    callback activated();
+
+    height: 52px;
+    border-radius: 10px;
+    background: root.selected ? #45475a : touch.has-hover ? #313244 : transparent;
+
+    HorizontalLayout {
+        padding: 8px;
+        spacing: 12px;
+        Image { source: root.app.icon; width: 36px; height: 36px; }
+        VerticalLayout {
+            alignment: center;
+            Text { text: root.app.name; color: #cdd6f4; font-size: 15px; overflow: elide; }
+            Text {
+                text: root.app.generic-name != "" ? root.app.generic-name : root.app.comment;
+                color: #a6adc8;
+                font-size: 12px;
+                overflow: elide;
+            }
+        }
+    }
+    touch := TouchArea { clicked => { root.activated(); } }
+}
+
+export component LauncherPanel inherits PanelWindow {
+    namespace: "slintlu-launcher";
+    layer: overlay;
+    keyboard-mode: exclusive;
+    exclusive-mode: ignore;
+    preferred-width: 560px;
+    preferred-height: 480px;
+    // Only on the focused screen (or every screen when the compositor does not say).
+    shown: Launcher.open && (Workspaces.focused-output == "" || Workspaces.focused-output == Shell.screen.name);
+
+    property <string> query;
+    property <int> selected;
+    property <[AppInfo]> results: Apps.search(root.query, 8);
+
+    function launch(app: AppInfo) {
+        Apps.launch(app.id);
+        Launcher.open = false;
+    }
+
+    changed shown => {
+        if self.shown {
+            root.query = "";
+            input.text = "";
+            root.selected = 0;
+            input.focus();
+        }
+    }
+
+    Rectangle {
+        border-radius: 16px;
+        background: #1e1e2ef2;
+        border-width: 1px;
+        border-color: #45475a;
+
+        VerticalLayout {
+            padding: 16px;
+            spacing: 12px;
+
+            Rectangle {
+                height: 44px;
+                border-radius: 10px;
+                background: #313244;
+                input := TextInput {
+                    x: 14px;
+                    width: parent.width - 28px;
+                    color: #cdd6f4;
+                    font-size: 16px;
+                    vertical-alignment: center;
+                    edited => {
+                        root.query = self.text;
+                        root.selected = 0;
+                    }
+                    accepted => {
+                        if root.results.length > 0 {
+                            root.launch(root.results[root.selected]);
+                        }
+                    }
+                    key-pressed(event) => {
+                        if event.text == Key.Escape {
+                            Launcher.open = false;
+                            return accept;
+                        }
+                        if event.text == Key.DownArrow {
+                            root.selected = min(root.selected + 1, root.results.length - 1);
+                            return accept;
+                        }
+                        if event.text == Key.UpArrow {
+                            root.selected = max(root.selected - 1, 0);
+                            return accept;
+                        }
+                        reject
+                    }
+                }
+                Text {
+                    x: 14px;
+                    visible: input.text == "";
+                    text: "Search applications…";
+                    color: #6c7086;
+                    font-size: 16px;
+                    vertical-alignment: center;
+                    height: parent.height;
+                }
+            }
+
+            for app[index] in root.results: Row {
+                app: app;
+                selected: index == root.selected;
+                activated => { root.launch(app); }
+            }
+            Rectangle { vertical-stretch: 1; }
+        }
+    }
+}

@@ -30,7 +30,7 @@ pub fn run(args: RunArgs) -> Result<(), String> {
         None
     } else {
         let dir = config.parent().unwrap_or(&config).to_path_buf();
-        Watcher::new(&dir, || {
+        Watcher::new(&[dir], || {
             host::with(|host| {
                 log::info!("configuration changed, reloading");
                 host.load();

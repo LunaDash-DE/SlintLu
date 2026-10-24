@@ -36,7 +36,7 @@ core.
 
 ```bash
 cargo install --path .
-slintlu init        # writes ~/.config/slintlu/{shell,bar}.slint
+slintlu init        # writes ~/.config/slintlu/{shell,bar,launcher}.slint
 slintlu             # runs it; edit the files and watch them reload
 ```
 
@@ -83,6 +83,8 @@ src/
 ├── ipc/          the shell's control socket: protocol and client
 ├── dbus/         notification daemon, MPRIS, NetworkManager, logind, desktop portal
 ├── i18n/         .po parsing, .mo writing, locale detection
+├── icons/        freedesktop icon theme lookup
+├── launcher/     desktop entries, search, launch history, launching
 ├── audio/        volume and devices (PipeWire / PulseAudio via pactl)
 ├── system/       CPU, memory, disks, temperatures, batteries, network, host
 ├── time/         clock formatting
@@ -103,7 +105,8 @@ scripts/          headless sway integration test
 - [x] IPC: control a running shell (`slintlu msg …`) from keybindings and scripts — see [docs/IPC.md](docs/IPC.md)
 - [x] D-Bus: notification daemon, media players (MPRIS), NetworkManager, power (logind), dark mode and accent colour (portal)
 - [x] i18n: `@tr()` with `.po` files compiled at runtime and live language switching — see [docs/I18N.md](docs/I18N.md)
-- [ ] Application launcher, icons, clipboard, lock screen (ext-session-lock + PAM), idle, system tray
+- [x] Applications and icons: desktop entries, fuzzy search ranked by usage, launching (terminal apps, actions), freedesktop icon themes
+- [ ] Clipboard, lock screen (ext-session-lock + PAM), idle, system tray
 
 ## Development
 

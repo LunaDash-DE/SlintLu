@@ -280,8 +280,16 @@ impl ShellHost {
             if let (Some(instance), Some(window)) = (weak.upgrade(), window_weak.upgrade())
                 && let WindowKind::Panel(spec) = panel::window_kind(&instance)
             {
-                window.set_role(role(&spec));
-                let result = if spec.shown { instance.show() } else { instance.hide() };
+                // Unmap before touching the layer state: a configure answering a commit made
+                // right before unmapping would arrive stale and be a protocol error.
+                let result = if spec.shown {
+                    window.set_role(role(&spec));
+                    instance.show()
+                } else {
+                    let hidden = instance.hide();
+                    window.set_role(role(&spec));
+                    hidden
+                };
                 if let Err(e) = result {
                     log::error!("cannot change panel visibility: {e}");
                 }

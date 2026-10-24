@@ -1,0 +1,38 @@
+export struct AppActionInfo {
+    id: string,
+    name: string,
+}
+
+export struct AppInfo {
+    // Desktop file id, used by `launch`.
+    id: string,
+    name: string,
+    generic-name: string,
+    comment: string,
+    icon: image,
+    icon-name: string,
+    terminal: bool,
+    categories: [string],
+    actions: [AppActionInfo],
+}
+
+// Installed applications (freedesktop desktop entries), refreshed when they change.
+export global Apps {
+    // Every visible application, sorted by name.
+    in property <[AppInfo]> all;
+
+    // Fuzzy search over names, descriptions and keywords, frequently used apps first. An empty
+    // query lists the most used applications.
+    pure callback search(query: string, limit: int) -> [AppInfo];
+    callback launch(id: string);
+    // Runs one of the application's extra actions (e.g. "new-private-window").
+    callback launch-action(id: string, action: string);
+}
+
+// Icons from the desktop's icon theme.
+export global Icons {
+    // The icon theme in use.
+    in property <string> theme;
+    // An icon by name (e.g. "firefox", "audio-volume-high") or path, at about `size` pixels.
+    pure callback lookup(name: string, size: int) -> image;
+}

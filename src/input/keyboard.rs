@@ -25,8 +25,12 @@ impl State {
     }
 
     pub(crate) fn key_event(&mut self, event: KeyEvent, kind: KeyKind) {
-        let Some(window) = self.focused_window() else { return };
+        let Some(window) = self.focused_window() else {
+            log::debug!("key event without a focused window: {:?}", event.keysym);
+            return;
+        };
         let Some(text) = key_text(&event) else { return };
+        log::trace!("key {:?} -> {text:?}", event.keysym);
         window.dispatch(match kind {
             KeyKind::Press => WindowEvent::KeyPressed { text },
             KeyKind::Repeat => WindowEvent::KeyPressRepeated { text },
@@ -47,6 +51,10 @@ impl KeyboardHandler for State {
         _: &[Keysym],
     ) {
         let window = self.ctx.find_window(surface);
+        log::debug!(
+            "keyboard focus enters {}",
+            if window.is_some() { "a SlintLu window" } else { "an unknown surface" }
+        );
         self.keyboard_focus = window.as_ref().map(Rc::downgrade);
         if let Some(window) = window {
             window.dispatch(WindowEvent::WindowActiveChanged(true));

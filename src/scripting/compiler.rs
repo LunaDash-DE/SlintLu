@@ -25,6 +25,8 @@ const RUNTIME_GLOBALS: &[&str] = &[
     "Power",
     "Theme",
     "I18n",
+    "Apps",
+    "Icons",
 ];
 
 /// A successful compilation and the diagnostics (warnings) that came with it.

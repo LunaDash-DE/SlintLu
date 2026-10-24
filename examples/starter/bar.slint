@@ -1,3 +1,4 @@
+import { Launcher } from "launcher.slint";
 import { PanelWindow, Shell, Clock, System, Battery, Audio, Workspaces, Media, Network, Notifications } from "@slintlu";
 
 component Chip inherits Rectangle {
@@ -113,7 +114,7 @@ export component Bar inherits PanelWindow {
                 clicked => { Notifications.do-not-disturb = !Notifications.do-not-disturb; }
             }
             Chip { visible: Workspaces.keyboard-layout != ""; text: Workspaces.keyboard-layout; accent: #b4befe; }
-            Chip { text: "apps"; accent: #cba6f7; clicked => { Shell.exec("fuzzel || wofi --show drun"); } }
+            Chip { text: "apps"; accent: #cba6f7; clicked => { Launcher.open = !Launcher.open; } }
         }
     }
 }

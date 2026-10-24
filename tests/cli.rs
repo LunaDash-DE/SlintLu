@@ -14,7 +14,8 @@ fn slintlu() -> Command {
 fn starter_config_compiles() {
     let out = slintlu().args(["check", "examples/starter"]).output().unwrap();
     assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
-    assert!(String::from_utf8_lossy(&out.stdout).contains("ok (Bar)"));
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    assert!(stdout.contains("Bar") && stdout.contains("LauncherPanel"), "{stdout}");
 }
 
 #[test]

@@ -44,7 +44,15 @@ fn value(entry: &Entry) -> Value {
         ("id", Value::Number(n.id.into())),
         ("app-name", string(&n.app_name)),
         ("app-icon", string(&n.app_icon)),
-        ("image", string(&n.image)),
+        ("icon", Value::Image(notification_icon(n))),
+        (
+            "image",
+            Value::Image(if n.image.is_empty() {
+                slint::Image::default()
+            } else {
+                super::icons::icon(&n.image, 256)
+            }),
+        ),
         ("summary", string(&n.summary)),
         ("body", string(&n.body)),
         ("urgency", string(urgency(n.urgency))),
@@ -56,6 +64,19 @@ fn value(entry: &Entry) -> Value {
         ),
         ("time", string(&entry.time)),
     ])
+}
+
+/// The app icon, else the icon of its desktop entry.
+fn notification_icon(n: &Notification) -> slint::Image {
+    let icon = super::icons::icon(&n.app_icon, super::icons::DEFAULT_SIZE);
+    if icon.size().width > 0 {
+        return icon;
+    }
+    [&n.desktop_entry, &n.app_name]
+        .into_iter()
+        .filter(|id| !id.is_empty())
+        .find_map(|id| super::apps::icon_for(id))
+        .unwrap_or_default()
 }
 
 impl Store {

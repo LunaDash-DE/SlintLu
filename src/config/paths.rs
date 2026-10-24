@@ -1,27 +1,17 @@
 //! XDG base directories and config file resolution.
 
-use std::env;
 use std::path::{Path, PathBuf};
 
-fn home() -> PathBuf {
-    env::var_os("HOME").map(PathBuf::from).unwrap_or_else(|| PathBuf::from("/"))
-}
-
-fn xdg_dir(var: &str, fallback: &str) -> PathBuf {
-    env::var_os(var)
-        .map(PathBuf::from)
-        .filter(|p| p.is_absolute())
-        .unwrap_or_else(|| home().join(fallback))
-}
+use slintlu::util::xdg;
 
 /// `$XDG_CONFIG_HOME/slintlu`.
 pub fn default_config_dir() -> PathBuf {
-    xdg_dir("XDG_CONFIG_HOME", ".config").join("slintlu")
+    xdg::config_home().join("slintlu")
 }
 
 /// `$XDG_DATA_HOME/slintlu`.
 pub fn data_home() -> PathBuf {
-    xdg_dir("XDG_DATA_HOME", ".local/share").join("slintlu")
+    xdg::data_home().join("slintlu")
 }
 
 /// Turns the `--config` argument (a file or a directory, or nothing) into the shell's entry

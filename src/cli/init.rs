@@ -8,6 +8,7 @@ use crate::config;
 const FILES: &[(&str, &str)] = &[
     ("shell.slint", include_str!("../../examples/starter/shell.slint")),
     ("bar.slint", include_str!("../../examples/starter/bar.slint")),
+    ("launcher.slint", include_str!("../../examples/starter/launcher.slint")),
 ];
 
 pub fn init(dir: Option<PathBuf>, force: bool) -> Result<(), String> {

@@ -1,9 +1,11 @@
 //! Native implementations of the `@slintlu` globals. Each module wires one domain (clock,
 //! audio, workspaces …) into the [`ShellHost`](super::ShellHost).
 
+mod apps;
 mod audio;
 mod clock;
 mod i18n;
+mod icons;
 mod media;
 mod network;
 mod notifications;
@@ -38,11 +40,15 @@ pub fn install(host: &Rc<ShellHost>, info: &ShellInfo) {
     power::install(host);
     theme::install(host);
     i18n::install(host);
+    icons::install(host);
+    apps::install(host);
 }
 
 /// Releases state that must not outlive the event loop.
 pub fn shutdown() {
     notifications::shutdown();
+    apps::shutdown();
+    icons::shutdown();
 }
 
 /// Fills per-window values (such as the formatted time) right after windows are created.

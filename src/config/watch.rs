@@ -1,6 +1,6 @@
 //! Hot reload: watches the configuration directory and asks the event loop to reload.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::mpsc;
 use std::time::Duration;
 
@@ -15,8 +15,8 @@ pub struct Watcher {
 }
 
 impl Watcher {
-    /// Calls `on_change` on the Slint event loop whenever a file below `dir` changes.
-    pub fn new(dir: &Path, on_change: fn()) -> notify::Result<Self> {
+    /// Calls `on_change` on the Slint event loop whenever a file below one of `dirs` changes.
+    pub fn new(dirs: &[PathBuf], on_change: fn()) -> notify::Result<Self> {
         let (tx, rx) = mpsc::channel::<()>();
         let mut inner =
             notify::recommended_watcher(move |event: notify::Result<notify::Event>| {
@@ -29,7 +29,9 @@ impl Watcher {
                     let _ = tx.send(());
                 }
             })?;
-        inner.watch(dir, RecursiveMode::Recursive)?;
+        for dir in dirs {
+            inner.watch(dir, RecursiveMode::Recursive)?;
+        }
 
         std::thread::Builder::new().name("slintlu-watch".into()).spawn(move || {
             while rx.recv().is_ok() {

@@ -43,6 +43,8 @@ fn publish(host: &ShellHost, state: &DesktopState) {
     );
     host.set_global("Workspaces", "focused-window", window(state.focused_window()));
     host.set_global("Workspaces", "keyboard-layout", string(&state.keyboard_layout));
+    let focused_output = state.workspaces.iter().find(|w| w.focused).map(|w| w.output.as_str());
+    host.set_global("Workspaces", "focused-output", string(focused_output.unwrap_or_default()));
 }
 
 fn action(

@@ -29,6 +29,8 @@ export global Workspaces {
     in property <[WindowInfo]> windows;
     in property <WindowInfo> focused-window;
     in property <string> keyboard-layout;
+    // Connector name of the screen with keyboard focus; empty when unknown.
+    in property <string> focused-output;
 
     callback focus(workspace-id: int);
     callback focus-window(window-id: string);

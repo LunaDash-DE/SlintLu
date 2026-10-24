@@ -18,6 +18,13 @@ fn player(p: Option<&MediaPlayer>) -> Value {
         ("artist", string(&p.artist)),
         ("album", string(&p.album)),
         ("art-url", string(&p.art_url)),
+        (
+            "art",
+            Value::Image(match p.art_url.strip_prefix("file://") {
+                Some(path) => super::icons::image_at(std::path::Path::new(path)),
+                None => slint::Image::default(),
+            }),
+        ),
         ("playing", Value::Bool(p.playing)),
         ("paused", Value::Bool(p.paused)),
         ("position", Value::Number(p.position)),

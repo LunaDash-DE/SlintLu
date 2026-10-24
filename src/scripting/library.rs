@@ -20,6 +20,7 @@ const FILES: &[(&str, &str)] = &[
     ("services/power.slint", include_str!("../ui/services/power.slint")),
     ("services/theme.slint", include_str!("../ui/services/theme.slint")),
     ("services/i18n.slint", include_str!("../ui/services/i18n.slint")),
+    ("services/apps.slint", include_str!("../ui/services/apps.slint")),
 ];
 
 /// The library name used in imports: `import { PanelWindow } from "@slintlu";`.
