@@ -11,3 +11,4 @@ pub mod network;
 pub mod notifications;
 pub mod portal;
 pub mod power;
+pub mod tray;

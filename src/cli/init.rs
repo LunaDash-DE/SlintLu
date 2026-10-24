@@ -10,6 +10,7 @@ const FILES: &[(&str, &str)] = &[
     ("bar.slint", include_str!("../../examples/starter/bar.slint")),
     ("launcher.slint", include_str!("../../examples/starter/launcher.slint")),
     ("lock.slint", include_str!("../../examples/starter/lock.slint")),
+    ("tray.slint", include_str!("../../examples/starter/tray.slint")),
 ];
 
 pub fn init(dir: Option<PathBuf>, force: bool) -> Result<(), String> {

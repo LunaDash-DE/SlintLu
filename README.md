@@ -37,7 +37,7 @@ core.
 
 ```bash
 cargo install --path .
-slintlu init        # writes ~/.config/slintlu/{shell,bar,launcher,lock}.slint
+slintlu init        # writes a starter bar, launcher, lock screen and tray menu to ~/.config/slintlu
 slintlu             # runs it; edit the files and watch them reload
 ```
 
@@ -82,7 +82,7 @@ src/
 ├── window/       the Slint window adapter: lifecycle and frame pacing
 ├── compositors/  compositor detection; niri, Hyprland and Sway IPC
 ├── ipc/          the shell's control socket: protocol and client
-├── dbus/         notifications, MPRIS, NetworkManager, logind, portal, BlueZ
+├── dbus/         notifications, MPRIS, NetworkManager, logind, portal, BlueZ, tray
 ├── i18n/         .po parsing, .mo writing, locale detection
 ├── icons/        freedesktop icon theme lookup
 ├── idle/         ext-idle-notify and idle inhibition
@@ -113,7 +113,7 @@ scripts/          headless sway integration test
 - [x] Lock screen: ext-session-lock, PAM, logind lock / suspend integration — see [docs/LOCKSCREEN.md](docs/LOCKSCREEN.md)
 - [x] Clipboard and primary selection, idle detection / inhibition / auto-lock, fractional scaling
 - [x] Screen brightness (sysfs + logind, no root) and Bluetooth (BlueZ, never auto-started)
-- [ ] System tray (StatusNotifierItem + dbusmenu)
+- [x] System tray: StatusNotifierItem host (and watcher when none runs) with dbusmenu menus
 
 ## Development
 

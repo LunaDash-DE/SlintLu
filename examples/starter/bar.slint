@@ -1,4 +1,5 @@
 import { Launcher } from "launcher.slint";
+import { TrayIcons } from "tray.slint";
 import { PanelWindow, Shell, Clock, System, Battery, Audio, Workspaces, Media, Network, Notifications, Session } from "@slintlu";
 
 component Chip inherits Rectangle {
@@ -83,6 +84,7 @@ export component Bar inherits PanelWindow {
         HorizontalLayout {
             spacing: 4px;
             alignment: end;
+            TrayIcons { }
             Chip {
                 text: "cpu " + round(System.cpu * 100) + "%";
                 accent: System.cpu > 0.8 ? #f38ba8 : #a6e3a1;

@@ -1,0 +1,45 @@
+export struct TrayItemInfo {
+    // Identifies the item in the callbacks below.
+    id: string,
+    title: string,
+    tooltip: string,
+    icon: image,
+    // "active", "passive" (may be hidden) or "attention".
+    status: string,
+    has-menu: bool,
+    // Clicking should open the menu instead of activating.
+    item-is-menu: bool,
+}
+
+export struct TrayMenuEntry {
+    id: int,
+    label: string,
+    enabled: bool,
+    separator: bool,
+    // "checkmark", "radio" or "".
+    toggle-type: string,
+    checked: bool,
+    // Nesting level: entries of a submenu follow their parent with depth + 1.
+    depth: int,
+    has-children: bool,
+}
+
+// The system tray (StatusNotifierItem): application icons with menus.
+export global Tray {
+    in property <bool> available;
+    in property <[TrayItemInfo]> items;
+    // The menu loaded by `open-menu` and the item it belongs to ("" when closed).
+    in property <string> menu-owner;
+    in property <[TrayMenuEntry]> menu;
+
+    // Left click.
+    callback activate(id: string);
+    // Middle click.
+    callback secondary-activate(id: string);
+    callback scroll(id: string, delta: int);
+    // Loads the item's menu into `menu` (items without one show their own menu).
+    callback open-menu(id: string);
+    callback close-menu();
+    // Clicks an entry of the open menu and closes it.
+    callback menu-activate(entry: int);
+}

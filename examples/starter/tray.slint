@@ -1,0 +1,88 @@
+// System tray icons for the bar, and the menu panel they open.
+
+import { PanelWindow, Tray, TrayItemInfo, Shell, Workspaces } from "@slintlu";
+
+export component TrayIcons inherits HorizontalLayout {
+    spacing: 6px;
+    alignment: end;
+    for item in Tray.items: Rectangle {
+        visible: item.status != "passive";
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        background: touch.has-hover ? #45475a : transparent;
+        Image { source: item.icon; width: 18px; height: 18px; }
+        touch := TouchArea {
+            pointer-event(event) => {
+                if event.kind == PointerEventKind.down && event.button == PointerEventButton.right {
+                    Tray.open-menu(item.id);
+                }
+            }
+            clicked => {
+                if item.item-is-menu { Tray.open-menu(item.id); } else { Tray.activate(item.id); }
+            }
+            scroll-event(event) => {
+                Tray.scroll(item.id, event.delta-y > 0 ? -1 : 1);
+                accept
+            }
+        }
+    }
+}
+
+export component TrayMenu inherits PanelWindow {
+    namespace: "slintlu-tray-menu";
+    layer: overlay;
+    anchor-top: true;
+    anchor-right: true;
+    margin-top: 38px;
+    margin-right: 8px;
+    exclusive-mode: ignore;
+    keyboard-mode: on-demand;
+    preferred-width: 260px;
+    shown: Tray.menu-owner != "" && (Workspaces.focused-output == "" || Workspaces.focused-output == Shell.screen.name);
+
+    Rectangle {
+        border-radius: 10px;
+        background: #1e1e2ef5;
+        border-width: 1px;
+        border-color: #45475a;
+        VerticalLayout {
+            padding: 6px;
+            for entry in Tray.menu: Rectangle {
+                height: entry.separator ? 9px : 28px;
+                border-radius: 6px;
+                background: !entry.separator && entry.enabled && touch.has-hover ? #45475a : transparent;
+                if entry.separator: Rectangle { height: 1px; background: #45475a; }
+                if !entry.separator: HorizontalLayout {
+                    padding-left: 10px + entry.depth * 14px;
+                    padding-right: 10px;
+                    spacing: 6px;
+                    Text {
+                        width: 14px;
+                        text: entry.checked ? (entry.toggle-type == "radio" ? "●" : "✓") : "";
+                        color: #a6e3a1;
+                        vertical-alignment: center;
+                    }
+                    Text {
+                        text: entry.label;
+                        color: entry.enabled ? #cdd6f4 : #6c7086;
+                        vertical-alignment: center;
+                        overflow: elide;
+                        horizontal-stretch: 1;
+                    }
+                    Text { text: entry.has-children ? "›" : ""; color: #6c7086; vertical-alignment: center; }
+                }
+                touch := TouchArea {
+                    enabled: entry.enabled && !entry.separator && !entry.has-children;
+                    clicked => { Tray.menu-activate(entry.id); }
+                }
+            }
+        }
+    }
+    FocusScope {
+        key-pressed(event) => {
+            if event.text == Key.Escape { Tray.close-menu(); return accept; }
+            reject
+        }
+    }
+}

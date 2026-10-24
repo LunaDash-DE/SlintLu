@@ -16,6 +16,7 @@ mod session;
 mod shell;
 mod system;
 mod theme;
+mod tray;
 mod worker;
 mod workspaces;
 
@@ -48,6 +49,7 @@ pub fn install(host: &Rc<ShellHost>, info: &ShellInfo) {
     session::install(host);
     idle::install(host);
     hardware::install(host);
+    tray::install(host);
 }
 
 /// Releases state that must not outlive the event loop.
@@ -56,6 +58,7 @@ pub fn shutdown() {
     apps::shutdown();
     icons::shutdown();
     idle::shutdown();
+    tray::shutdown();
 }
 
 /// Fills per-window values (such as the formatted time) right after windows are created.
