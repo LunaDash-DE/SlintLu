@@ -170,14 +170,16 @@ fn user_name(uid: u32) -> Option<String> {
 
 /// Picks whose password to ask for: the current user when allowed, else the first user listed.
 fn pick_identity(identities: &[(String, HashMap<String, OwnedVariant>)]) -> Option<String> {
-    let me = super::current_user();
-    let users: Vec<String> = identities
+    let uids: Vec<u32> = identities
         .iter()
         .filter(|(kind, _)| kind == "unix-user")
         .filter_map(|(_, details)| details.get("uid").and_then(|v| u32::try_from(&**v).ok()))
-        .filter_map(user_name)
         .collect();
-    users.iter().find(|u| **u == me).cloned().or_else(|| users.into_iter().next())
+    // The user running the shell (by uid: $USER can be missing or stale), else the first.
+    // SAFETY: getuid has no preconditions and cannot fail.
+    let my_uid = unsafe { libc::getuid() };
+    let uid = uids.iter().copied().find(|uid| *uid == my_uid).or_else(|| uids.first().copied())?;
+    user_name(uid)
 }
 
 /// Starts polkit's helper for `user`, returning a stream to talk to it.
