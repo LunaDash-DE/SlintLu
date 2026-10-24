@@ -73,9 +73,15 @@ impl ShellHost {
         host
     }
 
+    /// The shell's entry file.
+    pub fn config(&self) -> &std::path::Path {
+        &self.config
+    }
+
     /// Compiles the configuration and replaces all windows. On compile errors the running shell
     /// is kept and `false` is returned.
     pub fn load(&self) -> bool {
+        super::globals::load_translations(self);
         let compiled = match compiler::compile(&self.config) {
             Ok(compiled) => compiled,
             Err(diagnostics) => {

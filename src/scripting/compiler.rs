@@ -24,6 +24,7 @@ const RUNTIME_GLOBALS: &[&str] = &[
     "Network",
     "Power",
     "Theme",
+    "I18n",
 ];
 
 /// A successful compilation and the diagnostics (warnings) that came with it.
@@ -43,6 +44,7 @@ pub fn compile(config: &Path) -> Result<Compiled, Vec<Diagnostic>> {
     })?;
 
     let mut compiler = Compiler::new();
+    compiler.set_translation_domain(super::globals::TRANSLATION_DOMAIN.to_owned());
     compiler.set_library_paths(HashMap::from([(library::NAME.to_owned(), library)]));
     if let Some(dir) = config.parent() {
         compiler.set_include_paths(vec![dir.to_path_buf()]);

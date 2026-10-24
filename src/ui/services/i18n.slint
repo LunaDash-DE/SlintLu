@@ -1,0 +1,11 @@
+// Translations. Put `<language>.po` files (e.g. from `slint-tr-extractor`) in an `i18n`
+// directory next to your shell; texts written as `@tr("...")` are translated.
+export global I18n {
+    // The active language, e.g. "de" or "zh_TW"; empty for the untranslated texts.
+    in property <string> language;
+    // Languages with a translation in the shell's `i18n` directory.
+    in property <[string]> languages;
+
+    // Switches the language at runtime ("" for untranslated texts).
+    callback set-language(language: string);
+}

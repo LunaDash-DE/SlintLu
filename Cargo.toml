@@ -17,7 +17,7 @@ required-features = ["runtime"]
 [features]
 default = ["runtime", "opengl", "vulkan"]
 ## The `slintlu` executable: loads shells written in the Slint language at runtime.
-runtime = ["dep:slint-interpreter", "dep:clap", "dep:env_logger", "dep:notify", "dep:pollster"]
+runtime = ["slint/gettext", "dep:slint-interpreter", "dep:clap", "dep:env_logger", "dep:notify", "dep:pollster"]
 ## FemtoVG on OpenGL ES through EGL (libEGL is loaded at runtime).
 opengl = ["slint/renderer-femtovg", "dep:khronos-egl", "dep:wayland-egl"]
 ## FemtoVG on wgpu with the Vulkan backend.

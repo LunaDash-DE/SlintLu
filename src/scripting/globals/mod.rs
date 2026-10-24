@@ -3,6 +3,7 @@
 
 mod audio;
 mod clock;
+mod i18n;
 mod media;
 mod network;
 mod notifications;
@@ -16,6 +17,8 @@ mod workspaces;
 use std::rc::Rc;
 
 use super::ShellHost;
+
+pub use i18n::{TRANSLATION_DOMAIN, load_translations};
 
 /// Static information the `Shell` global exposes.
 pub struct ShellInfo {
@@ -34,6 +37,7 @@ pub fn install(host: &Rc<ShellHost>, info: &ShellInfo) {
     network::install(host);
     power::install(host);
     theme::install(host);
+    i18n::install(host);
 }
 
 /// Releases state that must not outlive the event loop.
