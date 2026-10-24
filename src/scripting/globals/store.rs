@@ -1,4 +1,4 @@
-//! The `Store` global: persistent settings per shell.
+//! The `Store` (persistent settings) and `Shared` (cross-window state) globals.
 
 use std::cell::RefCell;
 use std::hash::{DefaultHasher, Hash, Hasher};
@@ -12,30 +12,109 @@ use slintlu::util::xdg;
 use crate::scripting::ShellHost;
 use crate::scripting::bridge::{bool_arg, number_arg, string, string_arg};
 
-thread_local! {
-    static STORE: RefCell<Store> = RefCell::default();
-    static REVISION: RefCell<u32> = const { RefCell::new(0) };
+/// One key–value global: its Slint name, the values and a change counter.
+struct KeyValues {
+    global: &'static str,
+    store: RefCell<Store>,
+    revision: RefCell<u32>,
 }
 
-fn bump(host: &ShellHost) {
-    let revision = REVISION.with(|r| {
-        *r.borrow_mut() += 1;
-        *r.borrow()
-    });
-    host.set_global("Store", "revision", Value::Number(revision.into()));
+impl KeyValues {
+    fn new(global: &'static str) -> Rc<Self> {
+        Rc::new(Self { global, store: RefCell::default(), revision: RefCell::new(0) })
+    }
+
+    fn bump(&self, host: &ShellHost) {
+        let revision = {
+            let mut r = self.revision.borrow_mut();
+            *r += 1;
+            *r
+        };
+        host.set_global(self.global, "revision", Value::Number(revision.into()));
+    }
+
+    fn set(self: &Rc<Self>, host: &ShellHost, key: &str, value: Json) {
+        self.store.borrow_mut().set(key, value);
+        self.bump(host);
+    }
 }
 
-fn setter(host: &Rc<ShellHost>, name: &str, convert: fn(&[Value]) -> Option<Json>) {
+fn getter(
+    host: &Rc<ShellHost>,
+    kv: &Rc<KeyValues>,
+    name: &str,
+    read: fn(&Store, &[Value]) -> Value,
+) {
+    let kv2 = kv.clone();
+    host.on_callback(kv.global, name, Rc::new(move |args| read(&kv2.store.borrow(), args)));
+}
+
+fn setter(
+    host: &Rc<ShellHost>,
+    kv: &Rc<KeyValues>,
+    name: &str,
+    convert: fn(&[Value]) -> Option<Json>,
+) {
     let weak = Rc::downgrade(host);
+    let kv2 = kv.clone();
     host.on_callback(
-        "Store",
+        kv.global,
         name,
         Rc::new(move |args| {
-            if let (Some(key), Some(value)) = (string_arg(args, 0), convert(args)) {
-                STORE.with(|s| s.borrow_mut().set(&key, value));
-                if let Some(host) = weak.upgrade() {
-                    bump(&host);
-                }
+            if let (Some(key), Some(value), Some(host)) =
+                (string_arg(args, 0), convert(args), weak.upgrade())
+            {
+                kv2.set(&host, &key, value);
+            }
+            Value::Void
+        }),
+    );
+}
+
+fn key(args: &[Value]) -> String {
+    string_arg(args, 0).unwrap_or_default()
+}
+
+fn install_key_values(host: &Rc<ShellHost>, kv: &Rc<KeyValues>) {
+    getter(host, kv, "get-string", |store, args| {
+        let fallback = string_arg(args, 1).unwrap_or_default();
+        string(store.get(&key(args)).and_then(Json::as_str).map_or(fallback, str::to_owned))
+    });
+    getter(host, kv, "get-number", |store, args| {
+        let fallback = number_arg(args, 1).unwrap_or(0.0);
+        Value::Number(store.get(&key(args)).and_then(Json::as_f64).unwrap_or(fallback))
+    });
+    getter(host, kv, "get-bool", |store, args| {
+        let fallback = bool_arg(args, 1).unwrap_or(false);
+        Value::Bool(store.get(&key(args)).and_then(Json::as_bool).unwrap_or(fallback))
+    });
+    setter(host, kv, "set-string", |a| string_arg(a, 1).map(Json::String));
+    setter(host, kv, "set-number", |a| number_arg(a, 1).map(|n| json!(n)));
+    setter(host, kv, "set-bool", |a| bool_arg(a, 1).map(Json::Bool));
+
+    let weak = Rc::downgrade(host);
+    let kv2 = kv.clone();
+    host.on_callback(
+        kv.global,
+        "remove",
+        Rc::new(move |args| {
+            if let Some(host) = weak.upgrade() {
+                kv2.store.borrow_mut().remove(&key(args));
+                kv2.bump(&host);
+            }
+            Value::Void
+        }),
+    );
+    let weak = Rc::downgrade(host);
+    let kv2 = kv.clone();
+    host.on_callback(
+        kv.global,
+        "toggle",
+        Rc::new(move |args| {
+            if let Some(host) = weak.upgrade() {
+                let key = key(args);
+                let current = kv2.store.borrow().get(&key).and_then(Json::as_bool).unwrap_or(false);
+                kv2.set(&host, &key, Json::Bool(!current));
             }
             Value::Void
         }),
@@ -47,57 +126,9 @@ pub fn install(host: &Rc<ShellHost>) {
     host.config().hash(&mut hasher);
     let path =
         xdg::state_home().join("slintlu").join(format!("store-{:016x}.json", hasher.finish()));
-    STORE.with(|s| *s.borrow_mut() = Store::load(&path));
     log::debug!("store: {}", path.display());
-
-    host.on_callback(
-        "Store",
-        "get-string",
-        Rc::new(|args| {
-            let key = string_arg(args, 0).unwrap_or_default();
-            let fallback = string_arg(args, 1).unwrap_or_default();
-            let value =
-                STORE.with(|s| s.borrow().get(&key).and_then(Json::as_str).map(str::to_owned));
-            string(value.unwrap_or(fallback))
-        }),
-    );
-    host.on_callback(
-        "Store",
-        "get-number",
-        Rc::new(|args| {
-            let key = string_arg(args, 0).unwrap_or_default();
-            let fallback = number_arg(args, 1).unwrap_or(0.0);
-            Value::Number(
-                STORE.with(|s| s.borrow().get(&key).and_then(Json::as_f64)).unwrap_or(fallback),
-            )
-        }),
-    );
-    host.on_callback(
-        "Store",
-        "get-bool",
-        Rc::new(|args| {
-            let key = string_arg(args, 0).unwrap_or_default();
-            let fallback = bool_arg(args, 1).unwrap_or(false);
-            Value::Bool(
-                STORE.with(|s| s.borrow().get(&key).and_then(Json::as_bool)).unwrap_or(fallback),
-            )
-        }),
-    );
-    setter(host, "set-string", |a| string_arg(a, 1).map(Json::String));
-    setter(host, "set-number", |a| number_arg(a, 1).map(|n| json!(n)));
-    setter(host, "set-bool", |a| bool_arg(a, 1).map(Json::Bool));
-    let weak = Rc::downgrade(host);
-    host.on_callback(
-        "Store",
-        "remove",
-        Rc::new(move |args| {
-            if let Some(key) = string_arg(args, 0) {
-                STORE.with(|s| s.borrow_mut().remove(&key));
-                if let Some(host) = weak.upgrade() {
-                    bump(&host);
-                }
-            }
-            Value::Void
-        }),
-    );
+    let persistent = KeyValues::new("Store");
+    *persistent.store.borrow_mut() = Store::load(&path);
+    install_key_values(host, &persistent);
+    install_key_values(host, &KeyValues::new("Shared"));
 }

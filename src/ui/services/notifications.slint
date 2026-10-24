@@ -30,11 +30,13 @@ export global Notifications {
     // Every notification not dismissed yet, newest first.
     in property <[NotificationInfo]> history;
     in property <int> count;
-    // Only critical notifications pop up while set.
-    in-out property <bool> do-not-disturb;
+    // Only critical notifications pop up while set (see `set-do-not-disturb`).
+    in property <bool> do-not-disturb;
     // How long pop-ups stay when the application does not say.
-    in-out property <duration> default-timeout: 5s;
+    in property <duration> default-timeout: 5s;
 
+    callback set-do-not-disturb(enabled: bool);
+    callback set-default-timeout(timeout: duration);
     // Removes a notification (the user closed it).
     callback dismiss(id: int);
     callback dismiss-all();

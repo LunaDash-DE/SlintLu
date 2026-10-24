@@ -1,0 +1,19 @@
+// State shared by all windows of the shell. Globals you define yourself exist once per window
+// (one panel cannot see another panel's copy), so keep cross-window state — which popup is
+// open, toggles — here:
+//     property <bool> open: Shared.get-bool("launcher", false, Shared.revision);
+//     clicked => { Shared.toggle("launcher"); }
+// From scripts: `slintlu msg call Shared.toggle launcher`.
+export global Shared {
+    // Increases on every change; pass it to the getters.
+    in property <int> revision;
+    pure callback get-string(key: string, fallback: string, revision: int) -> string;
+    pure callback get-number(key: string, fallback: float, revision: int) -> float;
+    pure callback get-bool(key: string, fallback: bool, revision: int) -> bool;
+    callback set-string(key: string, value: string);
+    callback set-number(key: string, value: float);
+    callback set-bool(key: string, value: bool);
+    callback remove(key: string);
+    // Flips a bool (false when unset).
+    callback toggle(key: string);
+}

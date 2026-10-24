@@ -10,7 +10,9 @@ use slintlu::dbus::notifications::{
     self, CloseReason, Notification, NotificationEvent, NotificationHandle, Urgency,
 };
 
-use crate::scripting::bridge::{list_value, number_arg, string, string_arg, struct_value};
+use crate::scripting::bridge::{
+    bool_arg, list_value, number_arg, string, string_arg, struct_value,
+};
 use crate::scripting::{ShellHost, host};
 
 const FALLBACK_TIMEOUT: Duration = Duration::from_secs(5);
@@ -97,23 +99,20 @@ impl Store {
     }
 }
 
-fn setting(host: &ShellHost, name: &str) -> Option<Value> {
-    host.global_property("Notifications", name)
+thread_local! {
+    static DO_NOT_DISTURB: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+    static DEFAULT_TIMEOUT: std::cell::Cell<Duration> = const { std::cell::Cell::new(FALLBACK_TIMEOUT) };
 }
 
 fn on_notify(store: &Rc<RefCell<Store>>, notification: Notification) {
-    let Some(host) = store.borrow().host.upgrade() else { return };
-    let do_not_disturb = matches!(setting(&host, "do-not-disturb"), Some(Value::Bool(true)));
+    let do_not_disturb = DO_NOT_DISTURB.with(|d| d.get());
     let popup = !do_not_disturb || notification.urgency == Urgency::Critical;
     let timeout = match notification.timeout {
         Some(0) => None,
         Some(ms) => Some(Duration::from_millis(ms.into())),
         // Critical notifications stay until dismissed, as the specification suggests.
         None if notification.urgency == Urgency::Critical => None,
-        None => Some(match setting(&host, "default-timeout") {
-            Some(Value::Number(ms)) if ms > 0.0 => Duration::from_millis(ms as u64),
-            _ => FALLBACK_TIMEOUT,
-        }),
+        None => Some(DEFAULT_TIMEOUT.with(|t| t.get())),
     };
 
     let id = notification.id;
@@ -186,6 +185,32 @@ pub fn install(host: &Rc<ShellHost>) {
     STORE.with(|s| *s.borrow_mut() = Some(store.clone()));
     store.borrow().publish();
 
+    let weak = Rc::downgrade(host);
+    host.on_callback(
+        "Notifications",
+        "set-do-not-disturb",
+        Rc::new(move |args| {
+            if let (Some(enabled), Some(host)) = (bool_arg(args, 0), weak.upgrade()) {
+                DO_NOT_DISTURB.with(|d| d.set(enabled));
+                host.set_global("Notifications", "do-not-disturb", Value::Bool(enabled));
+            }
+            Value::Void
+        }),
+    );
+    let weak = Rc::downgrade(host);
+    host.on_callback(
+        "Notifications",
+        "set-default-timeout",
+        Rc::new(move |args| {
+            if let (Some(ms), Some(host)) =
+                (number_arg(args, 0).filter(|ms| *ms > 0.0), weak.upgrade())
+            {
+                DEFAULT_TIMEOUT.with(|t| t.set(Duration::from_millis(ms as u64)));
+                host.set_global("Notifications", "default-timeout", Value::Number(ms));
+            }
+            Value::Void
+        }),
+    );
     let s = store.clone();
     host.on_callback(
         "Notifications",

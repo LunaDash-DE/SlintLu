@@ -1,4 +1,5 @@
-// User activity. React to `idle` with a local property and a `changed` handler, e.g.
+// User activity. Settings apply to the whole shell. React to `idle` with a local property and
+// a `changed` handler, e.g.
 //     property <bool> idle: Idle.idle;
 //     changed idle => { if idle { Shell.exec("niri msg action power-off-monitors"); } }
 export global Idle {
@@ -6,9 +7,13 @@ export global Idle {
     in property <bool> available;
     // No input for `timeout`.
     in property <bool> idle;
-    in-out property <duration> timeout: 300s;
+    in property <duration> timeout: 300s;
     // Lock the session after this much inactivity; 0 disables it.
-    in-out property <duration> lock-after: 0s;
-    // Keep the screen awake (a "caffeine" toggle). Needs a visible shell window.
-    in-out property <bool> inhibited;
+    in property <duration> lock-after: 0s;
+    // The screen is kept awake (a "caffeine" toggle). Needs a visible shell window.
+    in property <bool> inhibited;
+
+    callback set-timeout(timeout: duration);
+    callback set-lock-after(timeout: duration);
+    callback set-inhibited(inhibited: bool);
 }

@@ -1,6 +1,5 @@
-import { Launcher } from "launcher.slint";
 import { TrayIcons } from "tray.slint";
-import { PanelWindow, Shell, Clock, System, Battery, Audio, Workspaces, Media, Network, Notifications, Session, Theme } from "@slintlu";
+import { PanelWindow, Shell, Clock, System, Battery, Audio, Workspaces, Media, Network, Notifications, Session, Shared, Theme } from "@slintlu";
 
 component Chip inherits Rectangle {
     in property <string> text;
@@ -113,10 +112,10 @@ export component Bar inherits PanelWindow {
                 visible: Notifications.available;
                 text: Notifications.do-not-disturb ? "dnd" : "notif " + Notifications.count;
                 accent: Theme.yellow;
-                clicked => { Notifications.do-not-disturb = !Notifications.do-not-disturb; }
+                clicked => { Notifications.set-do-not-disturb(!Notifications.do-not-disturb); }
             }
             Chip { visible: Workspaces.keyboard-layout != ""; text: Workspaces.keyboard-layout; accent: Theme.blue; }
-            Chip { text: "apps"; accent: Theme.magenta; clicked => { Launcher.open = !Launcher.open; } }
+            Chip { text: "apps"; accent: Theme.magenta; clicked => { Shared.toggle("launcher"); } }
             Chip { text: "lock"; accent: Theme.red; clicked => { Session.lock(); } }
         }
     }

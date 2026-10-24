@@ -1,11 +1,7 @@
-// An application launcher. Bind a key to `slintlu msg toggle Launcher.open`, e.g. in niri:
-//     Mod+D { spawn "slintlu" "msg" "toggle" "Launcher.open"; }
+// An application launcher. Bind a key to `slintlu msg call Shared.toggle launcher`, e.g. in niri:
+//     Mod+D { spawn "slintlu" "msg" "call" "Shared.toggle" "launcher"; }
 
-import { PanelWindow, Shell, Apps, AppInfo, Workspaces, Theme } from "@slintlu";
-
-export global Launcher {
-    in-out property <bool> open;
-}
+import { PanelWindow, Shell, Shared, Apps, AppInfo, Workspaces, Theme } from "@slintlu";
 
 component Row inherits Rectangle {
     in property <AppInfo> app;
@@ -42,7 +38,7 @@ export component LauncherPanel inherits PanelWindow {
     preferred-width: 560px;
     preferred-height: 480px;
     // Only on the focused screen (or every screen when the compositor does not say).
-    shown: Launcher.open && (Workspaces.focused-output == "" || Workspaces.focused-output == Shell.screen.name);
+    shown: Shared.get-bool("launcher", false, Shared.revision) && (Workspaces.focused-output == "" || Workspaces.focused-output == Shell.screen.name);
 
     property <string> query;
     property <int> selected;
@@ -50,7 +46,7 @@ export component LauncherPanel inherits PanelWindow {
 
     function launch(app: AppInfo) {
         Apps.launch(app.id);
-        Launcher.open = false;
+        Shared.set-bool("launcher", false);
     }
 
     changed shown => {
@@ -93,7 +89,7 @@ export component LauncherPanel inherits PanelWindow {
                     }
                     key-pressed(event) => {
                         if event.text == Key.Escape {
-                            Launcher.open = false;
+                            Shared.set-bool("launcher", false);
                             return accept;
                         }
                         if event.text == Key.DownArrow {

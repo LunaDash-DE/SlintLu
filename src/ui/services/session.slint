@@ -8,11 +8,12 @@ export global Session {
     in property <bool> authenticating;
     // Feedback for the lock screen, e.g. "Authentication failure".
     in property <string> message;
-    // Lock automatically before the machine suspends.
-    in-out property <bool> lock-before-sleep: true;
+    // Lock automatically before the machine suspends (see `set-lock-before-sleep`).
+    in property <bool> lock-before-sleep: true;
 
     // Locks now (also triggered by `loginctl lock-session` and `Power.lock()`).
     callback lock();
     // Checks the password with PAM and unlocks on success.
     callback authenticate(password: string);
+    callback set-lock-before-sleep(enabled: bool);
 }

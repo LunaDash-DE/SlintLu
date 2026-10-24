@@ -11,4 +11,6 @@ export global Store {
     callback set-number(key: string, value: float);
     callback set-bool(key: string, value: bool);
     callback remove(key: string);
+    // Flips a bool (false when unset).
+    callback toggle(key: string);
 }

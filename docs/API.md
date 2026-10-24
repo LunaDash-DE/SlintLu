@@ -192,15 +192,18 @@ Icons from the desktop's icon theme.
 
 ### Idle
 
-User activity. React to `idle` with a local property and a `changed` handler, e.g. property <bool> idle: Idle.idle; changed idle => { if idle { Shell.exec("niri msg action power-off-monitors"); } }
+User activity. Settings apply to the whole shell. React to `idle` with a local property and a `changed` handler, e.g. property <bool> idle: Idle.idle; changed idle => { if idle { Shell.exec("niri msg action power-off-monitors"); } }
 
 | Member | Type | Access | Description |
 |---|---|---|---|
 | `available` | `bool` | read | Whether idle detection works on this compositor (ext-idle-notify-v1). |
 | `idle` | `bool` | read | No input for `timeout`. |
-| `timeout` | `duration` | read / write = `300s` |  |
-| `lock-after` | `duration` | read / write = `0s` | Lock the session after this much inactivity; 0 disables it. |
-| `inhibited` | `bool` | read / write | Keep the screen awake (a "caffeine" toggle). Needs a visible shell window. |
+| `timeout` | `duration` | read = `300s` |  |
+| `lock-after` | `duration` | read = `0s` | Lock the session after this much inactivity; 0 disables it. |
+| `inhibited` | `bool` | read | The screen is kept awake (a "caffeine" toggle). Needs a visible shell window. |
+| `set-timeout(timeout: duration)` | callback | call |  |
+| `set-lock-after(timeout: duration)` | callback | call |  |
+| `set-inhibited(inhibited: bool)` | callback | call |  |
 
 ### Media
 
@@ -242,8 +245,10 @@ The notification daemon (org.freedesktop.Notifications). Unavailable when anothe
 | `popups` | `[NotificationInfo]` | read | Notifications to show as pop-ups now; they leave this list when they expire. |
 | `history` | `[NotificationInfo]` | read | Every notification not dismissed yet, newest first. |
 | `count` | `int` | read |  |
-| `do-not-disturb` | `bool` | read / write | Only critical notifications pop up while set. |
-| `default-timeout` | `duration` | read / write = `5s` | How long pop-ups stay when the application does not say. |
+| `do-not-disturb` | `bool` | read | Only critical notifications pop up while set (see `set-do-not-disturb`). |
+| `default-timeout` | `duration` | read = `5s` | How long pop-ups stay when the application does not say. |
+| `set-do-not-disturb(enabled: bool)` | callback | call |  |
+| `set-default-timeout(timeout: duration)` | callback | call |  |
 | `dismiss(id: int)` | callback | call | Removes a notification (the user closed it). |
 | `dismiss-all()` | callback | call |  |
 | `invoke(id: int, action-key: string)` | callback | call | Runs one of its actions ("default" for clicking the notification itself). |
@@ -293,9 +298,26 @@ The session lock. Define a component inheriting `LockWindow` to enable locking.
 | `user` | `string` | read | The user whose password unlocks the session. |
 | `authenticating` | `bool` | read | A password check is running. |
 | `message` | `string` | read | Feedback for the lock screen, e.g. "Authentication failure". |
-| `lock-before-sleep` | `bool` | read / write = `true` | Lock automatically before the machine suspends. |
+| `lock-before-sleep` | `bool` | read = `true` | Lock automatically before the machine suspends (see `set-lock-before-sleep`). |
 | `lock()` | callback | call | Locks now (also triggered by `loginctl lock-session` and `Power.lock()`). |
 | `authenticate(password: string)` | callback | call | Checks the password with PAM and unlocks on success. |
+| `set-lock-before-sleep(enabled: bool)` | callback | call |  |
+
+### Shared
+
+State shared by all windows of the shell. Globals you define yourself exist once per window (one panel cannot see another panel's copy), so keep cross-window state — which popup is open, toggles — here: property <bool> open: Shared.get-bool("launcher", false, Shared.revision); clicked => { Shared.toggle("launcher"); } From scripts: `slintlu msg call Shared.toggle launcher`.
+
+| Member | Type | Access | Description |
+|---|---|---|---|
+| `revision` | `int` | read | Increases on every change; pass it to the getters. |
+| `get-string(key: string, fallback: string, revision: int)` | callback → `string` | call |  |
+| `get-number(key: string, fallback: float, revision: int)` | callback → `float` | call |  |
+| `get-bool(key: string, fallback: bool, revision: int)` | callback → `bool` | call |  |
+| `set-string(key: string, value: string)` | callback | call |  |
+| `set-number(key: string, value: float)` | callback | call |  |
+| `set-bool(key: string, value: bool)` | callback | call |  |
+| `remove(key: string)` | callback | call |  |
+| `toggle(key: string)` | callback | call | Flips a bool (false when unset). |
 
 ### Shell
 
@@ -326,6 +348,7 @@ Settings that survive restarts, stored per shell in $XDG_STATE_HOME/slintlu. Rea
 | `set-number(key: string, value: float)` | callback | call |  |
 | `set-bool(key: string, value: bool)` | callback | call |  |
 | `remove(key: string)` | callback | call |  |
+| `toggle(key: string)` | callback | call | Flips a bool (false when unset). |
 
 ### System
 

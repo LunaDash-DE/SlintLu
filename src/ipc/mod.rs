@@ -2,7 +2,7 @@
 //!
 //! The protocol is one JSON [`Request`] per line on a Unix socket, answered by one JSON
 //! [`Response`] line. Any global exported by the shell can be read, written or called, so a
-//! compositor keybinding like `slintlu msg toggle Launcher.open` can open a launcher.
+//! compositor keybinding like `slintlu msg call Shared.toggle launcher` can open a launcher.
 
 mod client;
 mod protocol;

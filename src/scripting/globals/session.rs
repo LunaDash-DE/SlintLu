@@ -8,11 +8,12 @@ use slintlu::dbus::power::{Power, SessionEvent};
 use slintlu::security::{self, LockEvent};
 
 use super::worker::spawn_watcher;
-use crate::scripting::bridge::{string, string_arg};
+use crate::scripting::bridge::{bool_arg, string, string_arg};
 use crate::scripting::{ShellHost, host};
 
 thread_local! {
     static AUTHENTICATING: Cell<bool> = const { Cell::new(false) };
+    static LOCK_BEFORE_SLEEP: Cell<bool> = const { Cell::new(true) };
 }
 
 fn set_locked_hint(locked: bool) {
@@ -105,6 +106,18 @@ pub fn install(host: &Rc<ShellHost>) {
             Value::Void
         }),
     );
+    let weak = Rc::downgrade(host);
+    host.on_callback(
+        "Session",
+        "set-lock-before-sleep",
+        Rc::new(move |args| {
+            if let (Some(enabled), Some(host)) = (bool_arg(args, 0), weak.upgrade()) {
+                LOCK_BEFORE_SLEEP.with(|l| l.set(enabled));
+                host.set_global("Session", "lock-before-sleep", Value::Bool(enabled));
+            }
+            Value::Void
+        }),
+    );
     host.on_callback(
         "Session",
         "authenticate",
@@ -127,10 +140,7 @@ pub fn install(host: &Rc<ShellHost>) {
                         }
                     }),
                     SessionEvent::Sleep(true) => host::post(|host| {
-                        if matches!(
-                            host.global_property("Session", "lock-before-sleep"),
-                            Some(Value::Bool(true)) | None
-                        ) {
+                        if LOCK_BEFORE_SLEEP.with(|l| l.get()) {
                             lock(host);
                         }
                     }),
