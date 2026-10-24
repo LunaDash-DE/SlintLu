@@ -400,7 +400,7 @@ mod tests {
     fn unescapes_helper_lines() {
         assert_eq!(unescape(r"Password: "), "Password: ");
         assert_eq!(unescape(r"line\nnext\ttab\\"), "line\nnext\ttab\\");
-        assert_eq!(unescape(r"caf\303\251"), "caf\u{c3}\u{a9}");
+        assert_eq!(unescape(r"x\101\102"), "xAB");
     }
 
     #[test]
@@ -412,11 +412,12 @@ mod tests {
 
     #[test]
     fn prefers_the_current_user() {
-        let me = user_name(unsafe { libc::getuid() }).unwrap();
+        // SAFETY: getuid has no preconditions and cannot fail.
+        let my_uid = unsafe { libc::getuid() };
+        let me = user_name(my_uid).unwrap();
         let identity = |uid: u32| {
             ("unix-user".to_string(), HashMap::from([("uid".to_string(), OwnedVariant::from(uid))]))
         };
-        let my_uid = unsafe { libc::getuid() };
         assert_eq!(pick_identity(&[identity(0), identity(my_uid)]).as_deref(), Some(me.as_str()));
         assert_eq!(pick_identity(&[identity(0)]).as_deref(), Some("root"));
         assert_eq!(pick_identity(&[]), None);
