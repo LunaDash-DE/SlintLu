@@ -145,6 +145,19 @@ The local time, updated every second.
 | `month-grid(year: int, month: int, monday-first: bool)` | callback → `[CalendarDay]` | call | Six weeks (42 days) covering a month, for calendar grids. |
 | `format-date(year: int, month: int, day: int, pattern: string)` | callback → `string` | call | Formats a date with a strftime pattern, e.g. format-date(2026, 10, 1, "%B %Y"). |
 
+### Compositor
+
+The compositor itself: its name, requests it sends to the shell (keyboard shortcuts that open shell UI) and compositor-specific commands.
+
+| Member | Type | Access | Description |
+|---|---|---|---|
+| `name` | `string` | read | "lunadash", "niri", "hyprland", "sway", … or "unknown". |
+| `request` | `string` | read | The latest request, e.g. "launcher" (argument "true"/"false"), "settings" (argument: the page), "wallpaper-picker", "control-center", "clipboard", "power-menu". React to changes of `request-serial`. |
+| `request-argument` | `string` | read |  |
+| `request-serial` | `int` | read |  |
+| `has-commands` | `bool` | read | Whether `command` is supported (LunaDash). |
+| `command(method: string, value: string)` | callback | call | A compositor-specific command, e.g. command("launch-default", "terminal") on LunaDash. |
+
 ### Files
 
 Directories and images, e.g. for a wallpaper picker.

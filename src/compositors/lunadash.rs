@@ -99,16 +99,77 @@ fn build_state(status: &Value) -> DesktopState {
             })
             .collect(),
         keyboard_layout: String::new(),
+        request: None,
     };
     state.normalize();
     state
 }
 
+/// The serials LunaDash bumps when a shortcut asks the shell for something.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+struct Serials {
+    launcher: u64,
+    settings: u64,
+    picker: u64,
+    action: u64,
+}
+
+impl Serials {
+    fn of(status: &Value) -> Self {
+        let n = |key: &str| status[key].as_u64().unwrap_or(0);
+        Self {
+            launcher: n("launcherSerial"),
+            settings: n("settingsSerial"),
+            picker: n("pickerSerial"),
+            action: n("shellActionSerial"),
+        }
+    }
+
+    /// The request a change of serials stands for.
+    fn request(&self, before: &Self, status: &Value) -> Option<(String, String)> {
+        let text = |key: &str| status[key].as_str().unwrap_or_default().to_owned();
+        if self.launcher != before.launcher {
+            let open = status["launcherOpen"].as_bool().unwrap_or(true);
+            return Some(("launcher".into(), open.to_string()));
+        }
+        if self.settings != before.settings {
+            return Some(("settings".into(), text("settingsPage")));
+        }
+        if self.picker != before.picker {
+            return Some(("wallpaper-picker".into(), String::new()));
+        }
+        if self.action != before.action {
+            let action = match text("shellAction").as_str() {
+                "launchOrbit" => "orbit-launcher",
+                "openControlCenter" => "control-center",
+                "openClipboard" => "clipboard",
+                "openPowerMenu" => "power-menu",
+                other => return Some((other.to_owned(), String::new())),
+            };
+            return Some((action.into(), String::new()));
+        }
+        None
+    }
+}
+
 impl Backend for LunaDash {
     fn watch(&self, on_state: &mut dyn FnMut(&DesktopState)) -> io::Result<()> {
-        let mut last = None;
+        let mut last: Option<DesktopState> = None;
+        let mut serials: Option<Serials> = None;
+        let mut request: Option<crate::compositors::CompositorRequest> = None;
         loop {
-            let state = build_state(&self.request("status", "")?);
+            let status = self.request("status", "")?;
+            let mut state = build_state(&status);
+            let now = Serials::of(&status);
+            // The first snapshot only records the serials: old requests are not replayed.
+            if let Some(before) = &serials
+                && let Some((action, argument)) = now.request(before, &status)
+            {
+                let serial = request.as_ref().map_or(1, |r| r.serial + 1);
+                request = Some(crate::compositors::CompositorRequest { serial, action, argument });
+            }
+            serials = Some(now);
+            state.request = request.clone();
             if last.as_ref() != Some(&state) {
                 on_state(&state);
                 last = Some(state);
@@ -124,6 +185,10 @@ impl Backend for LunaDash {
             Action::CloseWindow(id) => self.request("close", &id.to_string()),
         }
         .map(drop)
+    }
+
+    fn command(&self, method: &str, value: &str) -> io::Result<String> {
+        self.request(method, value).map(|v| v.to_string())
     }
 }
 
@@ -148,6 +213,20 @@ mod tests {
         assert_eq!(state.workspaces[0].windows, 1);
         assert_eq!(state.windows.len(), 2);
         assert_eq!(state.focused_window().unwrap().title, "Zed");
+    }
+
+    #[test]
+    fn serial_changes_become_requests() {
+        let before = Serials::of(&json!({"launcherSerial": 1, "shellActionSerial": 4}));
+        let status = json!({"launcherSerial": 1, "shellActionSerial": 5, "shellAction": "openControlCenter"});
+        let now = Serials::of(&status);
+        assert_eq!(now.request(&before, &status), Some(("control-center".into(), String::new())));
+        let status = json!({"launcherSerial": 2, "launcherOpen": false, "shellActionSerial": 5});
+        assert_eq!(
+            Serials::of(&status).request(&now, &status),
+            Some(("launcher".into(), "false".into()))
+        );
+        assert_eq!(now.request(&now, &status), None);
     }
 
     #[test]

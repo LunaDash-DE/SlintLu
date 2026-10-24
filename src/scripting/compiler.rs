@@ -36,6 +36,7 @@ const RUNTIME_GLOBALS: &[&str] = &[
     "Store",
     "Files",
     "ClipboardHistory",
+    "Compositor",
 ];
 
 /// A successful compilation and the diagnostics (warnings) that came with it.

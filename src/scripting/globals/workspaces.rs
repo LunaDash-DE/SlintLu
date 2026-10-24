@@ -45,6 +45,12 @@ fn publish(host: &ShellHost, state: &DesktopState) {
     host.set_global("Workspaces", "keyboard-layout", string(&state.keyboard_layout));
     let focused_output = state.workspaces.iter().find(|w| w.focused).map(|w| w.output.as_str());
     host.set_global("Workspaces", "focused-output", string(focused_output.unwrap_or_default()));
+    if let Some(request) = &state.request {
+        host.set_global("Compositor", "request", string(&request.action));
+        host.set_global("Compositor", "request-argument", string(&request.argument));
+        // Set last: shells react to the serial changing.
+        host.set_global("Compositor", "request-serial", Value::Number(request.serial as f64));
+    }
 }
 
 fn action(
@@ -72,6 +78,8 @@ fn window_id(args: &[Value]) -> Option<u64> {
 }
 
 pub fn install(host: &Rc<ShellHost>, compositor: Compositor) {
+    host.set_global("Compositor", "name", string(compositor.as_str()));
+    host.set_global("Compositor", "has-commands", Value::Bool(compositor == Compositor::LunaDash));
     let Some(backend) = compositors::backend(compositor) else {
         log::info!("workspaces: no IPC support for the {compositor} compositor");
         host.set_global("Workspaces", "available", Value::Bool(false));
@@ -87,6 +95,19 @@ pub fn install(host: &Rc<ShellHost>, compositor: Compositor) {
         })
     });
 
+    let commands = backend.clone();
+    host.on_callback(
+        "Compositor",
+        "command",
+        Rc::new(move |args| {
+            if let Some(method) = string_arg(args, 0) {
+                let value = string_arg(args, 1).unwrap_or_default();
+                let backend = commands.clone();
+                run_action("compositor", move || backend.command(&method, &value).map(drop));
+            }
+            Value::Void
+        }),
+    );
     action(host, &backend, "focus", |a| Some(Action::FocusWorkspace(number_arg(a, 0)? as u64)));
     action(host, &backend, "focus-window", |a| Some(Action::FocusWindow(window_id(a)?)));
     action(host, &backend, "close-window", |a| Some(Action::CloseWindow(window_id(a)?)));

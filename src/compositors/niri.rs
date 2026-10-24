@@ -174,6 +174,7 @@ impl NiriState {
             workspaces: self.workspaces.clone(),
             windows: self.windows.clone(),
             keyboard_layout: self.layouts.get(self.layout).cloned().unwrap_or_default(),
+            request: None,
         };
         state.normalize();
         state

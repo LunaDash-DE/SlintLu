@@ -120,6 +120,7 @@ fn build_state(workspaces: &Value, tree: &Value, inputs: &Value) -> DesktopState
             .find_map(|i| i["xkb_active_layout_name"].as_str())
             .unwrap_or_default()
             .to_owned(),
+        request: None,
     };
     state.normalize();
     state

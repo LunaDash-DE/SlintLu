@@ -27,6 +27,17 @@ pub struct Window {
     pub urgent: bool,
 }
 
+/// The compositor asking the shell to do something, e.g. open its launcher from a keyboard
+/// shortcut.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct CompositorRequest {
+    /// Increases with every request, so repeated requests are distinguishable.
+    pub serial: u64,
+    /// e.g. "launcher", "settings", "wallpaper-picker", "control-center", "power-menu".
+    pub action: String,
+    pub argument: String,
+}
+
 /// Everything a shell typically shows about the desktop.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct DesktopState {
@@ -34,6 +45,8 @@ pub struct DesktopState {
     pub workspaces: Vec<Workspace>,
     pub windows: Vec<Window>,
     pub keyboard_layout: String,
+    /// The latest request from the compositor, for compositors that send them.
+    pub request: Option<CompositorRequest>,
 }
 
 impl DesktopState {

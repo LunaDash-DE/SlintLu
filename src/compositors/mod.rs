@@ -12,7 +12,7 @@ use std::sync::Arc;
 
 pub use detect::Compositor;
 pub use lunadash::LunaDash;
-pub use model::{Action, DesktopState, Window, Workspace};
+pub use model::{Action, CompositorRequest, DesktopState, Window, Workspace};
 
 /// A compositor's IPC connection.
 pub trait Backend: Send + Sync {
@@ -20,6 +20,12 @@ pub trait Backend: Send + Sync {
     fn watch(&self, on_state: &mut dyn FnMut(&DesktopState)) -> io::Result<()>;
     /// Asks the compositor to do something.
     fn perform(&self, action: &Action) -> io::Result<()>;
+    /// Sends a compositor-specific command (LunaDash control methods such as
+    /// `launch-default terminal`) and returns its raw reply.
+    fn command(&self, method: &str, value: &str) -> io::Result<String> {
+        let _ = (method, value);
+        Err(io::Error::new(io::ErrorKind::Unsupported, "this compositor has no command interface"))
+    }
 }
 
 /// The IPC backend for `compositor`, if it has one and its socket is advertised.
