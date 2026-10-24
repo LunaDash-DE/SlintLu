@@ -96,7 +96,42 @@ fi
 cat "$work/app.log"
 echo "::endgroup::"
 
-grim -t ppm "$work/shot.ppm"
+# Software Vulkan and GL can take seconds for their first frame: retry the screenshot check.
+for attempt in $(seq "${SHOT_ATTEMPTS:-8}"); do
+    grim -t ppm "$work/shot.ppm"
+    if python3 - "$work/shot.ppm" "${CHECK_BAR:-1}" >"$work/check.txt" 2>&1 <<'PY'
+import sys
+
+check_bar = (sys.argv[2] if len(sys.argv) > 2 else "1") != "0"
+
+with open(sys.argv[1], "rb") as f:
+    data = f.read()
+parts = data.split(maxsplit=4)
+assert parts[0] == b"P6", parts[0]
+width, height = int(parts[1]), int(parts[2])
+pixels = parts[4]
+
+def row_coverage(y):
+    row = pixels[y * width * 3:(y + 1) * width * 3]
+    lit = sum(1 for x in range(width) if row[3 * x] or row[3 * x + 1] or row[3 * x + 2])
+    return lit / width
+
+top = [row_coverage(y) for y in range(4, 28)]
+bottom = [row_coverage(y) for y in range(height // 2, height // 2 + 24)]
+print(f"top rows covered: {min(top):.0%}..{max(top):.0%}, middle rows: {max(bottom):.0%}")
+if check_bar and min(top) < 0.9:
+    sys.exit("no bar found along the top edge")
+if max(bottom) > 0.05:
+    sys.exit("unexpected content in the middle of the screen")
+print("headless render check passed")
+PY
+    then
+        cat "$work/check.txt"
+        break
+    fi
+    ((attempt < ${SHOT_ATTEMPTS:-8})) || { cat "$work/check.txt"; fail "the screenshot check failed"; }
+    sleep 1
+done
 cp "$work/shot.ppm" "${SCREENSHOT:-/dev/null}" 2>/dev/null || true
 
 # Exercise the IPC socket when testing the slintlu runtime.
@@ -136,30 +171,3 @@ if [[ "$(basename "${cmd[0]}")" == slintlu ]]; then
 fi
 
 
-if python3 - "$work/shot.ppm" "${CHECK_BAR:-1}" <<'PY'
-import sys
-
-check_bar = (sys.argv[2] if len(sys.argv) > 2 else "1") != "0"
-
-with open(sys.argv[1], "rb") as f:
-    data = f.read()
-parts = data.split(maxsplit=4)
-assert parts[0] == b"P6", parts[0]
-width, height = int(parts[1]), int(parts[2])
-pixels = parts[4]
-
-def row_coverage(y):
-    row = pixels[y * width * 3:(y + 1) * width * 3]
-    lit = sum(1 for x in range(width) if row[3 * x] or row[3 * x + 1] or row[3 * x + 2])
-    return lit / width
-
-top = [row_coverage(y) for y in range(4, 28)]
-bottom = [row_coverage(y) for y in range(height // 2, height // 2 + 24)]
-print(f"top rows covered: {min(top):.0%}..{max(top):.0%}, middle rows: {max(bottom):.0%}")
-if check_bar and min(top) < 0.9:
-    sys.exit("no bar found along the top edge")
-if max(bottom) > 0.05:
-    sys.exit("unexpected content in the middle of the screen")
-print("headless render check passed")
-PY
-then :; else fail "the screenshot check failed"; fi

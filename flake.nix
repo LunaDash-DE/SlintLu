@@ -59,6 +59,6 @@
         package = self.packages.${pkgs.stdenv.hostPlatform.system}.slintlu;
       });
 
-      formatter = forAllSystems (pkgs: pkgs.nixfmt-rfc-style);
+      formatter = forAllSystems (pkgs: pkgs.nixfmt);
     };
 }
