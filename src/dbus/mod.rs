@@ -4,6 +4,7 @@
 //! Each service runs on its own thread with [`zbus::block_on`] and reports plain Rust values
 //! through a callback, so it can drive Slint globals as well as anything else.
 
+pub mod bluetooth;
 mod markup;
 pub mod mpris;
 pub mod network;

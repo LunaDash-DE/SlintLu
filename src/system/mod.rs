@@ -1,6 +1,7 @@
 //! Machine statistics read from `/proc` and `/sys`: CPU, memory, disks, temperatures,
 //! batteries, network traffic and host information.
 
+mod backlight;
 mod battery;
 mod cpu;
 mod disk;
@@ -9,6 +10,7 @@ mod memory;
 mod network;
 mod thermal;
 
+pub use backlight::{Backlight, backlight};
 pub use battery::{Battery, BatteryState, batteries};
 pub use cpu::CpuSampler;
 pub use disk::{DiskUsage, disk_usage};

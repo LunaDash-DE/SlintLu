@@ -27,6 +27,7 @@ trait Login1Session {
     fn unlock(&self) -> zbus::Result<()>;
     fn terminate(&self) -> zbus::Result<()>;
     fn set_locked_hint(&self, locked: bool) -> zbus::Result<()>;
+    fn set_brightness(&self, subsystem: &str, name: &str, brightness: u32) -> zbus::Result<()>;
     #[zbus(signal, name = "Lock")]
     fn lock_requested(&self) -> zbus::Result<()>;
     #[zbus(signal, name = "Unlock")]
@@ -105,6 +106,11 @@ impl Power {
     /// Tells logind whether the session is locked (shown by `loginctl` and used by idle tools).
     pub fn set_locked_hint(&self, locked: bool) -> zbus::Result<()> {
         zbus::block_on(async { self.session().await?.set_locked_hint(locked).await })
+    }
+
+    /// Sets a backlight (`subsystem` "backlight") or LED through logind, which needs no root.
+    pub fn set_brightness(&self, subsystem: &str, name: &str, value: u32) -> zbus::Result<()> {
+        zbus::block_on(async { self.session().await?.set_brightness(subsystem, name, value).await })
     }
 
     /// Blocks, reporting lock / unlock requests and sleep transitions.

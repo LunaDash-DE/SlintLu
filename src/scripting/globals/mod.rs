@@ -4,6 +4,7 @@
 mod apps;
 mod audio;
 mod clock;
+mod hardware;
 mod i18n;
 mod icons;
 mod idle;
@@ -46,6 +47,7 @@ pub fn install(host: &Rc<ShellHost>, info: &ShellInfo) {
     apps::install(host);
     session::install(host);
     idle::install(host);
+    hardware::install(host);
 }
 
 /// Releases state that must not outlive the event loop.

@@ -29,6 +29,8 @@ const RUNTIME_GLOBALS: &[&str] = &[
     "Icons",
     "Session",
     "Idle",
+    "Brightness",
+    "Bluetooth",
 ];
 
 /// A successful compilation and the diagnostics (warnings) that came with it.
