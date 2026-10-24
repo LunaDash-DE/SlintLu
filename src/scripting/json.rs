@@ -31,7 +31,12 @@ pub fn to_json(value: &Value) -> Json {
         Value::Struct(s) => {
             Json::Object(s.iter().map(|(k, v)| (k.to_owned(), to_json(v))).collect::<Map<_, _>>())
         }
-        other => Json::String(format!("{other:?}")),
+        // Images are reported by the file they came from; pixel data would be huge.
+        Value::Image(image) => {
+            image.path().map_or(Json::Null, |p| Json::String(p.display().to_string()))
+        }
+        Value::Brush(_) => Json::String("gradient".into()),
+        _ => Json::Null,
     }
 }
 

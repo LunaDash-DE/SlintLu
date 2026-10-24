@@ -107,6 +107,8 @@ if [[ "$(basename "${cmd[0]}")" == slintlu ]]; then
     locked="$("${cmd[0]}" msg get Session.locked)"
     echo "Session.locked = $locked"
     [[ "$locked" == true ]] || { echo "the session did not lock" >&2; exit 1; }
+    # Every documented global property must be readable.
+    python3 scripts/api-smoke.py "${cmd[0]}"
     actual="$("${cmd[0]}" msg get Shell.renderer)"
     echo "Shell.renderer = $actual"
     if [[ "$renderer" != auto && "$actual" != "$renderer" ]]; then
