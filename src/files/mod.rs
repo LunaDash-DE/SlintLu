@@ -90,7 +90,10 @@ fn thumbnail_in(cache: &Path, path: &Path, size: u32) -> Result<PathBuf, String>
     if let Some(dir) = target.parent() {
         std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
     }
-    thumb.save_with_format(&target, image::ImageFormat::Png).map_err(|e| e.to_string())?;
+    // Written next to the target and renamed, so readers never see a half-written file.
+    let partial = target.with_extension(format!("{}.part", std::process::id()));
+    thumb.save_with_format(&partial, image::ImageFormat::Png).map_err(|e| e.to_string())?;
+    std::fs::rename(&partial, &target).map_err(|e| e.to_string())?;
     Ok(target)
 }
 

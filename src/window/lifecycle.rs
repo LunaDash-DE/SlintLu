@@ -24,9 +24,9 @@ impl WaylandWindow {
                 return;
             };
             *object = match &role {
-                SurfaceRole::Layer(config) => match layer::create(&self.ctx, surface, config) {
-                    Ok(layer) => RoleObject::Layer(layer),
-                    Err(surface) => {
+                SurfaceRole::Layer(config) => match layer::create(&self.ctx, &surface, config) {
+                    Some(layer) => RoleObject::Layer(layer, surface),
+                    None => {
                         log::warn!(
                             "compositor has no layer-shell, showing a normal window instead"
                         );
@@ -45,12 +45,12 @@ impl WaylandWindow {
         }
 
         match &*object {
-            RoleObject::Layer(layer_surface) => {
+            RoleObject::Layer(layer_surface, _) => {
                 if let SurfaceRole::Layer(config) = &role {
                     layer::apply(layer_surface, config, self.frame.preferred_size.get(), (0, 0));
                 }
-                // A commit without a buffer (re)maps the surface; a configure follows.
-                layer_surface.commit();
+                // A commit without a buffer maps the surface; a configure follows.
+                self.wl_surface.commit();
             }
             RoleObject::Toplevel(window) => window.commit(),
             // Lock surfaces get their configure without a commit; committing before the first
@@ -89,6 +89,18 @@ impl WaylandWindow {
         self.frame.frame_pending.set(false);
         self.wl_surface.attach(None, 0, 0);
         self.wl_surface.commit();
+        // Layer surfaces also lose their role object (see `shell::layer`); showing the window
+        // again creates a new one, which also applies a changed output or namespace.
+        let mut object = self.role_object.borrow_mut();
+        if matches!(&*object, RoleObject::Layer(..)) {
+            let RoleObject::Layer(role, surface) =
+                std::mem::replace(&mut *object, RoleObject::Unassigned(None))
+            else {
+                unreachable!()
+            };
+            drop(role);
+            *object = RoleObject::Unassigned(Some(surface));
+        }
     }
 
     pub(crate) fn configure(&self, width: u32, height: u32) {
@@ -98,15 +110,14 @@ impl WaylandWindow {
         let resized = self.frame.logical_size.replace((width, height)) != (width, height);
         self.frame.configured.set(true);
 
-        if let (RoleObject::Layer(layer_surface), SurfaceRole::Layer(config)) =
+        if let (RoleObject::Layer(layer_surface, _), SurfaceRole::Layer(config)) =
             (&*self.role_object.borrow(), &*self.role.borrow())
         {
             // Keep an automatic exclusive zone in sync with the real size.
-            layer_surface.set_exclusive_zone(config.exclusive_zone.resolve(
-                config.anchors,
-                width,
-                height,
-            ));
+            layer::set_exclusive_zone(
+                layer_surface,
+                config.exclusive_zone.resolve(config.anchors, width, height),
+            );
         }
 
         if resized {
@@ -173,7 +184,7 @@ impl WaylandWindow {
                 }
                 window.set_min_size(min);
             }
-            RoleObject::Layer(_) if preferred_changed => {
+            RoleObject::Layer(..) if preferred_changed => {
                 self.role_changed();
             }
             _ => {}
@@ -185,7 +196,7 @@ impl WaylandWindow {
         if !self.frame.shown.get() {
             return;
         }
-        if let (RoleObject::Layer(layer_surface), SurfaceRole::Layer(config)) =
+        if let (RoleObject::Layer(layer_surface, _), SurfaceRole::Layer(config)) =
             (&*self.role_object.borrow(), &*self.role.borrow())
         {
             layer::apply(
@@ -194,7 +205,7 @@ impl WaylandWindow {
                 self.frame.preferred_size.get(),
                 self.frame.logical_size.get(),
             );
-            layer_surface.commit();
+            self.wl_surface.commit();
         }
     }
 }

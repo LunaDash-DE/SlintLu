@@ -1,3 +1,5 @@
+import { WindowInfo } from "workspaces.slint";
+
 export struct AppActionInfo {
     id: string,
     name: string,
@@ -16,15 +18,38 @@ export struct AppInfo {
     actions: [AppActionInfo],
 }
 
+// An application with its open windows, for docks and task bars (see `Apps.group-windows`).
+export struct AppWindows {
+    // The desktop entry; `id` is empty when no entry matches the windows' app id.
+    app: AppInfo,
+    // The windows' app id (Wayland app_id or X11 class); empty for pinned apps without windows.
+    app-id: string,
+    pinned: bool,
+    // Window ids, the focused one first.
+    windows: [string],
+    focused: bool,
+    urgent: bool,
+}
+
 // Installed applications (freedesktop desktop entries), refreshed when they change.
 export global Apps {
     // Every visible application, sorted by name.
     in property <[AppInfo]> all;
 
     // Fuzzy search over names, descriptions and keywords, frequently used apps first. An empty
-    // query lists the most used applications.
+    // query lists the most used applications. Applications are scanned in the background; to
+    // refresh results when they arrive, mention `all` in the binding:
+    //     property <[AppInfo]> results: Apps.all.length >= 0 ? Apps.search(query, 40) : [];
     pure callback search(query: string, limit: int) -> [AppInfo];
     callback launch(id: string);
+    // One application by desktop file id (empty fields when unknown).
+    pure callback get(id: string) -> AppInfo;
+    // The icon of the application a window belongs to, from its app id (Wayland app_id or
+    // X11 class), falling back to the icon theme.
+    pure callback icon-for(app-id: string) -> image;
+    // Groups windows by application: the `pinned` desktop file ids first (in that order, with
+    // or without windows), then the other applications with windows in order of appearance.
+    pure callback group-windows(pinned: [string], windows: [WindowInfo]) -> [AppWindows];
     // Runs one of the application's extra actions (e.g. "new-private-window").
     callback launch-action(id: string, action: string);
 }

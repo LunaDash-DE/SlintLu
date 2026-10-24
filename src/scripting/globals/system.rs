@@ -49,7 +49,7 @@ fn poll(host: &ShellHost, samplers: &mut Samplers) {
     }
 
     let temperatures = system::temperatures();
-    let hottest = temperatures.iter().map(|t| t.celsius).fold(0.0f32, f32::max);
+    let hottest = system::headline_temperature(&temperatures);
     host.set_global("System", "temperature", number(hottest));
     host.set_global(
         "System",

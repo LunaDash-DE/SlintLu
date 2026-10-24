@@ -14,6 +14,8 @@ export global Shell {
 
     // Runs a command line through `sh -c`, detached from the shell.
     callback exec(command: string);
+    // An environment variable of the shell process ("" when unset).
+    pure callback env(name: string) -> string;
     // Reloads the shell configuration.
     callback reload();
     // Exits SlintLu.
@@ -22,6 +24,8 @@ export global Shell {
 
 // Internal channel through which windows describe themselves to the runtime.
 export global SlintLuRuntime {
+    // Set once the services are connected; base windows then call their `ready` callback.
+    in property <bool> ready;
     in-out property <string> kind;
     in-out property <PanelSettings> panel;
     in-out property <string> app-id;

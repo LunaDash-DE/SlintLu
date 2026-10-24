@@ -26,6 +26,13 @@ pub fn install(host: &Rc<ShellHost>, info: &ShellInfo) {
     );
     host.on_callback(
         "Shell",
+        "env",
+        Rc::new(|args| {
+            string(std::env::var(string_arg(args, 0).unwrap_or_default()).unwrap_or_default())
+        }),
+    );
+    host.on_callback(
+        "Shell",
         "reload",
         Rc::new(|_| {
             // Never drop the windows from inside one of their own callbacks.

@@ -15,7 +15,8 @@ export global System {
     // Human readable, e.g. "5.2 GiB / 15.6 GiB".
     in property <string> memory-text;
     in property <string> disk-text;
-    // Highest sensor reading in °C, and all sensors.
+    // The processor temperature in °C (the hottest plausible sensor without one), and all
+    // sensors.
     in property <float> temperature;
     in property <[Temperature]> temperatures;
     // Bytes per second over physical interfaces, and as text ("1.2 MB/s").

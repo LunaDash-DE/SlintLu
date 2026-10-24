@@ -121,6 +121,63 @@ fn install_key_values(host: &Rc<ShellHost>, kv: &Rc<KeyValues>) {
     );
 }
 
+fn list(store: &Store, key: &str) -> Vec<String> {
+    store
+        .get(key)
+        .and_then(Json::as_array)
+        .map(|a| a.iter().filter_map(|v| v.as_str().map(str::to_owned)).collect())
+        .unwrap_or_default()
+}
+
+fn install_lists(host: &Rc<ShellHost>, kv: &Rc<KeyValues>) {
+    getter(host, kv, "get-list", |store, args| {
+        crate::scripting::bridge::list_value(list(store, &key(args)).into_iter().map(string))
+    });
+    getter(host, kv, "list-contains", |store, args| {
+        let value = string_arg(args, 1).unwrap_or_default();
+        Value::Bool(list(store, &key(args)).contains(&value))
+    });
+    setter(host, kv, "set-list", |a| match a.get(1) {
+        Some(Value::Model(model)) => {
+            use slint::Model;
+            Some(Json::Array(
+                model
+                    .iter()
+                    .filter_map(|v| match v {
+                        Value::String(s) => Some(Json::String(s.to_string())),
+                        _ => None,
+                    })
+                    .collect(),
+            ))
+        }
+        _ => None,
+    });
+    for (name, add) in [("list-add", true), ("list-remove", false)] {
+        let weak = Rc::downgrade(host);
+        let kv2 = kv.clone();
+        host.on_callback(
+            kv.global,
+            name,
+            Rc::new(move |args| {
+                if let (Some(value), Some(host)) = (string_arg(args, 1), weak.upgrade()) {
+                    let key = key(args);
+                    let mut items = list(&kv2.store.borrow(), &key);
+                    items.retain(|v| *v != value);
+                    if add {
+                        items.push(value);
+                    }
+                    kv2.set(
+                        &host,
+                        &key,
+                        Json::Array(items.into_iter().map(Json::String).collect()),
+                    );
+                }
+                Value::Void
+            }),
+        );
+    }
+}
+
 pub fn install(host: &Rc<ShellHost>) {
     let mut hasher = DefaultHasher::new();
     host.config().hash(&mut hasher);
@@ -130,5 +187,8 @@ pub fn install(host: &Rc<ShellHost>) {
     let persistent = KeyValues::new("Store");
     *persistent.store.borrow_mut() = Store::load(&path);
     install_key_values(host, &persistent);
-    install_key_values(host, &KeyValues::new("Shared"));
+    install_lists(host, &persistent);
+    let shared = KeyValues::new("Shared");
+    install_key_values(host, &shared);
+    install_lists(host, &shared);
 }

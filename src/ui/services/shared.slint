@@ -16,4 +16,11 @@ export global Shared {
     callback remove(key: string);
     // Flips a bool (false when unset).
     callback toggle(key: string);
+    // Lists of strings (e.g. pinned applications).
+    pure callback get-list(key: string, revision: int) -> [string];
+    pure callback list-contains(key: string, value: string, revision: int) -> bool;
+    callback set-list(key: string, values: [string]);
+    // Appends a value (if missing) / removes every occurrence.
+    callback list-add(key: string, value: string);
+    callback list-remove(key: string, value: string);
 }

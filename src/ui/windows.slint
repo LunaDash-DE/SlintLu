@@ -50,6 +50,16 @@ export component PanelWindow inherits Window {
         shown: root.shown,
     };
 
+    // Runs once SlintLu has connected the services (and set `Shell.screen`). `init` runs too
+    // early for that: call service callbacks such as `Shared.set-string` from here instead.
+    callback ready();
+    property <bool> runtime-ready: SlintLuRuntime.ready;
+    changed runtime-ready => {
+        if self.runtime-ready {
+            root.ready();
+        }
+    }
+
     background: transparent;
 
     init => {
@@ -66,6 +76,15 @@ export component PanelWindow inherits Window {
 export component FloatingWindow inherits Window {
     // The app id reported to the compositor (for window rules).
     in property <string> app-id: "slintlu";
+    // Runs once SlintLu has connected the services (and set `Shell.screen`). `init` runs too
+    // early for that: call service callbacks such as `Shared.set-string` from here instead.
+    callback ready();
+    property <bool> runtime-ready: SlintLuRuntime.ready;
+    changed runtime-ready => {
+        if self.runtime-ready {
+            root.ready();
+        }
+    }
 
     init => {
         SlintLuRuntime.kind = "window";
@@ -76,6 +95,15 @@ export component FloatingWindow inherits Window {
 // A lock screen. While the session is locked (see `Session.lock()`), one instance covers every
 // screen and receives all input. Call `Session.authenticate(password)` to unlock.
 export component LockWindow inherits Window {
+    // Runs once SlintLu has connected the services (and set `Shell.screen`). `init` runs too
+    // early for that: call service callbacks such as `Shared.set-string` from here instead.
+    callback ready();
+    property <bool> runtime-ready: SlintLuRuntime.ready;
+    changed runtime-ready => {
+        if self.runtime-ready {
+            root.ready();
+        }
+    }
     init => {
         SlintLuRuntime.kind = "lock";
     }

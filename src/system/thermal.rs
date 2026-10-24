@@ -50,9 +50,43 @@ pub fn temperatures() -> Vec<Temperature> {
     temps
 }
 
+/// Chips that measure the processor itself.
+const CPU_CHIPS: &[&str] =
+    &["coretemp", "k10temp", "zenpower", "cpu_thermal", "x86_pkg_temp", "soc_thermal", "cpu"];
+
+/// The temperature to show as "the" system temperature: the hottest processor sensor, else
+/// the hottest plausible one. Motherboard Super I/O chips (nct67xx, it87 …) report unconnected
+/// inputs as about 127 °C, so readings outside 1–115 °C are ignored.
+pub fn headline(temps: &[Temperature]) -> f32 {
+    let plausible = |t: &&Temperature| (1.0..=115.0).contains(&t.celsius);
+    let is_cpu = |t: &&Temperature| {
+        let chip = t.label.split_whitespace().next().unwrap_or_default();
+        CPU_CHIPS.iter().any(|c| chip.eq_ignore_ascii_case(c))
+    };
+    let hottest = |it: &mut dyn Iterator<Item = &Temperature>| {
+        it.map(|t| t.celsius).fold(None, |m: Option<f32>, c| Some(m.map_or(c, |m| m.max(c))))
+    };
+    hottest(&mut temps.iter().filter(plausible).filter(is_cpu))
+        .or_else(|| hottest(&mut temps.iter().filter(plausible)))
+        .unwrap_or(0.0)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn t(label: &str, celsius: f32) -> Temperature {
+        Temperature { label: label.into(), celsius }
+    }
+
+    #[test]
+    fn headline_prefers_the_processor() {
+        let temps =
+            [t("nct6779 SYSTIN", 127.5), t("coretemp Core 0", 41.0), t("nvme Composite", 48.0)];
+        assert_eq!(headline(&temps), 41.0);
+        assert_eq!(headline(&[t("nct6779 SYSTIN", 127.5), t("nvme Composite", 48.0)]), 48.0);
+        assert_eq!(headline(&[]), 0.0);
+    }
 
     #[test]
     fn readings_are_plausible() {

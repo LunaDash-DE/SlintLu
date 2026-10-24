@@ -58,6 +58,8 @@ pub fn compile(config: &Path) -> Result<Compiled, Vec<Diagnostic>> {
 
     let mut compiler = Compiler::new();
     compiler.set_translation_domain(super::globals::TRANSLATION_DOMAIN.to_owned());
+    // One msgid per text, whatever component it is in: simpler catalogs for shells.
+    compiler.set_default_translation_context(slint_interpreter::DefaultTranslationContext::None);
     compiler.set_library_paths(HashMap::from([(library::NAME.to_owned(), library)]));
     if let Some(dir) = config.parent() {
         compiler.set_include_paths(vec![dir.to_path_buf()]);

@@ -44,6 +44,7 @@ Put a `theme.json` next to `shell.slint`; it is re-read on every reload:
 | `system-accent` | `true` | use the desktop's accent colour when it has one |
 | `pywal` | `false` | use pywal / wallust colours from `~/.cache/wal/colors.json` |
 | `colors` | `{}` | override any role |
+| `palettes` | `{}` | define your own palettes by name (all roles plus `dark`), usable as `dark` / `light` |
 
 Built-in palettes: `catppuccin-mocha`, `catppuccin-latte`, `nord`, `gruvbox-dark`,
 `gruvbox-light`, `tokyo-night` (listed in `Theme.palettes`).

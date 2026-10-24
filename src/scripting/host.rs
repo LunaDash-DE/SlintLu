@@ -315,6 +315,13 @@ impl ShellHost {
         if let Some(output) = output {
             bridge::apply_property(&instance, "Shell", "screen", bridge::screen_value(output));
         }
+        // Triggers the windows' `ready` callback once the instance is registered and shown.
+        let weak = instance.as_weak();
+        slint::Timer::single_shot(std::time::Duration::ZERO, move || {
+            if let Some(instance) = weak.upgrade() {
+                bridge::apply_property(&instance, "SlintLuRuntime", "ready", Value::Bool(true));
+            }
+        });
         Some(instance)
     }
 

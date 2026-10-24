@@ -45,6 +45,8 @@ impl From<Color> for String {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct Palette {
+    /// Filled in from the key for palettes defined in theme.json.
+    #[serde(default)]
     pub name: String,
     pub dark: bool,
     /// Window and panel background.

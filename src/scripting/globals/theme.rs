@@ -78,6 +78,10 @@ pub fn load_config(host: &ShellHost) {
         }
         None => ThemeConfig::default(),
     };
+    let mut names: Vec<String> = config.palettes.keys().cloned().collect();
+    names.sort();
+    names.extend(theme::presets().into_iter().map(|p| p.name));
+    host.set_global("Theme", "palettes", list_value(names.iter().map(string)));
     STATE.with(|s| s.borrow_mut().config = config);
     publish(host);
 }

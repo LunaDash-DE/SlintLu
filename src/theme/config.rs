@@ -37,6 +37,8 @@ pub struct ThemeConfig {
     pub pywal: bool,
     /// Role → `#rrggbb` overrides, e.g. `"accent"`.
     pub colors: HashMap<String, Color>,
+    /// Extra named palettes, usable as `dark` / `light`.
+    pub palettes: HashMap<String, Palette>,
     pub font_family: String,
     pub font_size: f32,
     pub radius: f32,
@@ -51,6 +53,7 @@ impl Default for ThemeConfig {
             system_accent: true,
             pywal: false,
             colors: HashMap::new(),
+            palettes: HashMap::new(),
             font_family: String::new(),
             font_size: 13.0,
             radius: 10.0,
@@ -105,6 +108,9 @@ pub fn resolve(
         .pywal
         .then(|| pywal::load(&pywal::default_path()))
         .flatten()
+        .or_else(|| {
+            config.palettes.get(named).cloned().map(|p| Palette { name: named.clone(), ..p })
+        })
         .or_else(|| preset(named))
         .unwrap_or_else(|| {
             log::warn!("unknown theme `{named}`, using {fallback}");
@@ -149,6 +155,18 @@ mod tests {
         assert_eq!(palette.accent, Color(255, 0, 0));
         assert_eq!(palette.text, Color(255, 255, 255));
         assert_eq!(config.radius, 4.0);
+    }
+
+    #[test]
+    fn custom_palettes() {
+        let json = r##"{"dark": "mine", "palettes": {"mine": {"dark": true, "background": "#111318",
+            "surface": "#191c22", "surface-alt": "#22262e", "border": "#586172", "text": "#e2e5ed",
+            "text-muted": "#bdc5d3", "accent": "#9ccbfb", "red": "#ffb4ab", "green": "#b4d7ad",
+            "yellow": "#efcd8c", "blue": "#9ccbfb", "magenta": "#bbc7d9", "cyan": "#a8e0e0"}}}"##;
+        let config: ThemeConfig = serde_json::from_str(json).unwrap();
+        let palette = resolve(&config, Some(true), None);
+        assert_eq!(palette.name, "mine");
+        assert_eq!(palette.background, Color(0x11, 0x13, 0x18));
     }
 
     #[test]

@@ -17,4 +17,4 @@ pub use disk::{DiskUsage, disk_usage};
 pub use host::{HostInfo, host_info, uptime};
 pub use memory::{MemoryInfo, memory};
 pub use network::{NetworkSampler, NetworkTraffic};
-pub use thermal::{Temperature, temperatures};
+pub use thermal::{Temperature, headline as headline_temperature, temperatures};

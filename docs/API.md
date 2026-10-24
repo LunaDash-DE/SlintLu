@@ -18,10 +18,15 @@ An ordinary application window (settings, dialogs …), shown once.
 | Member | Type | Access | Description |
 |---|---|---|---|
 | `app-id` | `string` | set = `"slintlu"` | The app id reported to the compositor (for window rules). |
+| `ready()` | callback | call | Runs once SlintLu has connected the services (and set `Shell.screen`). `init` runs too early for that: call service callbacks such as `Shared.set-string` from here instead. |
 
 ### LockWindow (inherits `Window`)
 
 A lock screen. While the session is locked (see `Session.lock()`), one instance covers every screen and receives all input. Call `Session.authenticate(password)` to unlock.
+
+| Member | Type | Access | Description |
+|---|---|---|---|
+| `ready()` | callback | call | Runs once SlintLu has connected the services (and set `Shell.screen`). `init` runs too early for that: call service callbacks such as `Shared.set-string` from here instead. |
 
 ### PanelWindow (inherits `Window`)
 
@@ -44,6 +49,7 @@ A wlr-layer-shell surface: bars, docks, wallpapers, overlays, notifications … 
 | `keyboard-mode` | `KeyboardMode` | set = `KeyboardMode.none` | Whether the panel can take keyboard focus. |
 | `show-on` | `[string]` | set = `[]` | Connector names of the screens to appear on, e.g. ["DP-1"]. Empty means all screens. |
 | `shown` | `bool` | set = `true` | Whether the panel is mapped. Toggle it to build popups, menus and drawers. |
+| `ready()` | callback | call | Runs once SlintLu has connected the services (and set `Shell.screen`). `init` runs too early for that: call service callbacks such as `Shared.set-string` from here instead. |
 
 ## Globals
 
@@ -54,8 +60,11 @@ Installed applications (freedesktop desktop entries), refreshed when they change
 | Member | Type | Access | Description |
 |---|---|---|---|
 | `all` | `[AppInfo]` | read | Every visible application, sorted by name. |
-| `search(query: string, limit: int)` | callback → `[AppInfo]` | call | Fuzzy search over names, descriptions and keywords, frequently used apps first. An empty query lists the most used applications. |
+| `search(query: string, limit: int)` | callback → `[AppInfo]` | call | Fuzzy search over names, descriptions and keywords, frequently used apps first. An empty query lists the most used applications. Applications are scanned in the background; to refresh results when they arrive, mention `all` in the binding: property <[AppInfo]> results: Apps.all.length >= 0 ? Apps.search(query, 40) : []; |
 | `launch(id: string)` | callback | call |  |
+| `get(id: string)` | callback → `AppInfo` | call | One application by desktop file id (empty fields when unknown). |
+| `icon-for(app-id: string)` | callback → `image` | call | The icon of the application a window belongs to, from its app id (Wayland app_id or X11 class), falling back to the icon theme. |
+| `group-windows(pinned: [string], windows: [WindowInfo])` | callback → `[AppWindows]` | call | Groups windows by application: the `pinned` desktop file ids first (in that order, with or without windows), then the other applications with windows in order of appearance. |
 | `launch-action(id: string, action: string)` | callback | call | Runs one of the application's extra actions (e.g. "new-private-window"). |
 
 ### Audio
@@ -318,6 +327,11 @@ State shared by all windows of the shell. Globals you define yourself exist once
 | `set-bool(key: string, value: bool)` | callback | call |  |
 | `remove(key: string)` | callback | call |  |
 | `toggle(key: string)` | callback | call | Flips a bool (false when unset). |
+| `get-list(key: string, revision: int)` | callback → `[string]` | call | Lists of strings (e.g. pinned applications). |
+| `list-contains(key: string, value: string, revision: int)` | callback → `bool` | call |  |
+| `set-list(key: string, values: [string])` | callback | call |  |
+| `list-add(key: string, value: string)` | callback | call | Appends a value (if missing) / removes every occurrence. |
+| `list-remove(key: string, value: string)` | callback | call |  |
 
 ### Shell
 
@@ -331,6 +345,7 @@ Information about the running shell and actions it can perform.
 | `compositor` | `string` | read | The compositor, e.g. "niri", "hyprland", "sway" or "unknown". |
 | `version` | `string` | read |  |
 | `exec(command: string)` | callback | call | Runs a command line through `sh -c`, detached from the shell. |
+| `env(name: string)` | callback → `string` | call | An environment variable of the shell process ("" when unset). |
 | `reload()` | callback | call | Reloads the shell configuration. |
 | `quit()` | callback | call | Exits SlintLu. |
 
@@ -349,6 +364,11 @@ Settings that survive restarts, stored per shell in $XDG_STATE_HOME/slintlu. Rea
 | `set-bool(key: string, value: bool)` | callback | call |  |
 | `remove(key: string)` | callback | call |  |
 | `toggle(key: string)` | callback | call | Flips a bool (false when unset). |
+| `get-list(key: string, revision: int)` | callback → `[string]` | call | Lists of strings (e.g. pinned applications). |
+| `list-contains(key: string, value: string, revision: int)` | callback → `bool` | call |  |
+| `set-list(key: string, values: [string])` | callback | call |  |
+| `list-add(key: string, value: string)` | callback | call | Appends a value (if missing) / removes every occurrence. |
+| `list-remove(key: string, value: string)` | callback | call |  |
 
 ### System
 
@@ -363,7 +383,7 @@ Machine statistics, refreshed every two seconds.
 | `disk` | `float` | read | Root filesystem. |
 | `memory-text` | `string` | read | Human readable, e.g. "5.2 GiB / 15.6 GiB". |
 | `disk-text` | `string` | read |  |
-| `temperature` | `float` | read | Highest sensor reading in °C, and all sensors. |
+| `temperature` | `float` | read | The processor temperature in °C (the hottest plausible sensor without one), and all sensors. |
 | `temperatures` | `[Temperature]` | read |  |
 | `download` | `float` | read | Bytes per second over physical interfaces, and as text ("1.2 MB/s"). |
 | `upload` | `float` | read |  |
@@ -459,6 +479,19 @@ Workspaces and windows of niri, Hyprland or Sway.
 | `terminal` | `bool` |  |  |
 | `categories` | `[string]` |  |  |
 | `actions` | `[AppActionInfo]` |  |  |
+
+### AppWindows
+
+An application with its open windows, for docks and task bars (see `Apps.group-windows`).
+
+| Member | Type | Access | Description |
+|---|---|---|---|
+| `app` | `AppInfo` |  | The desktop entry; `id` is empty when no entry matches the windows' app id. |
+| `app-id` | `string` |  | The windows' app id (Wayland app_id or X11 class); empty for pinned apps without windows. |
+| `pinned` | `bool` |  |  |
+| `windows` | `[string]` |  | Window ids, the focused one first. |
+| `focused` | `bool` |  |  |
+| `urgent` | `bool` |  |  |
 
 ### AudioDevice
 
