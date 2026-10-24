@@ -25,7 +25,7 @@ jobs:
     name: Format
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
@@ -36,14 +36,14 @@ jobs:
     name: Spelling
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: crate-ci/typos@v1
 
   deny:
     name: Licences & advisories
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: EmbarkStudios/cargo-deny-action@v2
         with:
           command: check
@@ -53,7 +53,7 @@ jobs:
     name: Clippy & docs
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: awalsh128/cache-apt-pkgs-action@v1
         with:
           packages: ${{ env.BUILD_PACKAGES }}
@@ -79,7 +79,7 @@ jobs:
         # `1.92` is the minimum supported Rust version declared in Cargo.toml.
         toolchain: [stable, "1.92"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: awalsh128/cache-apt-pkgs-action@v1
         with:
           packages: ${{ env.BUILD_PACKAGES }}
@@ -108,7 +108,7 @@ jobs:
     # are informative only.
     continue-on-error: ${{ matrix.renderer != 'software' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: awalsh128/cache-apt-pkgs-action@v1
         with:
           packages: ${{ env.BUILD_PACKAGES }} sway grim fonts-dejavu-core libegl1 libgles2 libegl-mesa0 mesa-vulkan-drivers libvulkan1
