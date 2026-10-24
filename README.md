@@ -78,7 +78,11 @@ src/
 ├── render/       software / OpenGL (EGL) / Vulkan (wgpu) renderers and fallback
 ├── shell/        layer-shell and xdg-shell roles
 ├── window/       the Slint window adapter: lifecycle and frame pacing
-├── compositors/  compositor detection and IPC
+├── compositors/  compositor detection; niri, Hyprland and Sway IPC
+├── audio/        volume and devices (PipeWire / PulseAudio via pactl)
+├── system/       CPU, memory, disks, temperatures, batteries, network, host
+├── time/         clock formatting
+├── util/         human readable sizes, rates and durations
 ├── ui/           the `@slintlu` Slint library
 ├── scripting/    interpreter bridge: compiling, instantiating, globals   (runtime)
 ├── config/       configuration paths and hot reload                      (runtime)
@@ -91,7 +95,7 @@ scripts/          headless sway integration test
 
 - [x] Wayland platform: layer-shell, xdg-shell, outputs, input, three renderers
 - [x] Runtime: interpreter, per-screen panels, hot reload, CLI
-- [ ] Services: clock, system stats, battery, audio, workspaces (niri / Hyprland / Sway)
+- [x] Services: clock, system stats, battery, network traffic, audio, workspaces and windows (niri / Hyprland / Sway)
 - [ ] IPC: control a running shell (`slintlu msg …`) from keybindings and scripts
 - [ ] D-Bus: notifications daemon, MPRIS, NetworkManager, power (logind), dark mode (portal)
 - [ ] i18n, application launcher, clipboard, lock screen (ext-session-lock + PAM), idle, theming

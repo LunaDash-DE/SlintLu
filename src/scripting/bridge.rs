@@ -82,12 +82,33 @@ pub fn list_value(values: impl IntoIterator<Item = Value>) -> Value {
     Value::Model(ModelRc::new(VecModel::from(values.into_iter().collect::<Vec<_>>())))
 }
 
+/// A Slint struct from `(field, value)` pairs.
+pub fn struct_value<'a>(fields: impl IntoIterator<Item = (&'a str, Value)>) -> Value {
+    Value::Struct(fields.into_iter().map(|(k, v)| (k.to_string(), v)).collect::<Struct>())
+}
+
 /// A Slint string.
 pub fn string(value: impl AsRef<str>) -> Value {
     Value::String(SharedString::from(value.as_ref()))
 }
 
-/// The first argument of a callback as a string.
+/// An argument of a callback as a number.
+pub fn number_arg(args: &[Value], index: usize) -> Option<f64> {
+    match args.get(index) {
+        Some(Value::Number(n)) => Some(*n),
+        _ => None,
+    }
+}
+
+/// An argument of a callback as a bool.
+pub fn bool_arg(args: &[Value], index: usize) -> Option<bool> {
+    match args.get(index) {
+        Some(Value::Bool(b)) => Some(*b),
+        _ => None,
+    }
+}
+
+/// An argument of a callback as a string.
 pub fn string_arg(args: &[Value], index: usize) -> Option<String> {
     match args.get(index) {
         Some(Value::String(s)) => Some(s.to_string()),

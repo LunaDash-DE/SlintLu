@@ -1,7 +1,12 @@
 //! Native implementations of the `@slintlu` globals. Each module wires one domain (clock,
 //! audio, workspaces …) into the [`ShellHost`](super::ShellHost).
 
+mod audio;
+mod clock;
 mod shell;
+mod system;
+mod worker;
+mod workspaces;
 
 use std::rc::Rc;
 
@@ -15,4 +20,13 @@ pub struct ShellInfo {
 /// Registers every global with the host. Call before the first [`ShellHost::load`].
 pub fn install(host: &Rc<ShellHost>, info: &ShellInfo) {
     shell::install(host, info);
+    clock::install(host);
+    system::install(host);
+    audio::install(host);
+    workspaces::install(host, info.compositor);
+}
+
+/// Fills per-window values (such as the formatted time) right after windows are created.
+pub fn refresh(host: &ShellHost) {
+    clock::refresh(host);
 }

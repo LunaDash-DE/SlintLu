@@ -11,7 +11,8 @@ use super::library;
 /// Globals the runtime must be able to reach. The interpreter only exposes globals exported by
 /// the root file, so the user's file is compiled through a small generated root that re-exports
 /// both the user's components and these globals.
-const RUNTIME_GLOBALS: &[&str] = &["Shell", "SlintLuRuntime"];
+const RUNTIME_GLOBALS: &[&str] =
+    &["Shell", "SlintLuRuntime", "Clock", "System", "Battery", "Audio", "Workspaces"];
 
 /// A successful compilation and the diagnostics (warnings) that came with it.
 pub struct Compiled {

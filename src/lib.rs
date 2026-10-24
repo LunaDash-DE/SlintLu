@@ -39,12 +39,16 @@
 //!
 //! [smithay-client-toolkit]: https://docs.rs/smithay-client-toolkit
 
+pub mod audio;
 pub mod compositors;
 mod core;
 mod input;
 mod output;
 mod render;
 mod shell;
+pub mod system;
+pub mod time;
+pub mod util;
 mod window;
 
 pub use core::{PlatformConfig, WaylandPlatform, init, window_for};

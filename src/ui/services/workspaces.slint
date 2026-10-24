@@ -1,0 +1,36 @@
+export struct WorkspaceInfo {
+    id: int,
+    // Number shown to users.
+    index: int,
+    name: string,
+    // Connector name of its screen; compare with `Shell.screen.name`.
+    output: string,
+    // Visible on its screen.
+    active: bool,
+    // Visible on the focused screen.
+    focused: bool,
+    urgent: bool,
+    windows: int,
+}
+
+export struct WindowInfo {
+    id: string,
+    title: string,
+    app-id: string,
+    workspace: int,
+    focused: bool,
+    urgent: bool,
+}
+
+// Workspaces and windows of niri, Hyprland or Sway.
+export global Workspaces {
+    in property <bool> available;
+    in property <[WorkspaceInfo]> all;
+    in property <[WindowInfo]> windows;
+    in property <WindowInfo> focused-window;
+    in property <string> keyboard-layout;
+
+    callback focus(workspace-id: int);
+    callback focus-window(window-id: string);
+    callback close-window(window-id: string);
+}

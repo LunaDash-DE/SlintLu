@@ -1,23 +1,31 @@
-import { PanelWindow, Shell } from "@slintlu";
+import { PanelWindow, Shell, Clock, System, Battery, Audio, Workspaces } from "@slintlu";
 
 component Chip inherits Rectangle {
     in property <string> text;
-    in property <color> accent: #89b4fa;
+    in property <color> accent: #cdd6f4;
+    in property <bool> highlighted;
     callback clicked();
+    callback scrolled(delta: length);
 
     height: 24px;
-    width: label.preferred-width + 20px;
+    width: max(24px, label.preferred-width + 20px);
     border-radius: 12px;
-    background: touch.pressed ? #585b70 : touch.has-hover ? #45475a : #313244;
+    background: root.highlighted ? #89b4fa : touch.pressed ? #585b70 : touch.has-hover ? #45475a : #313244;
     animate background { duration: 120ms; }
 
     label := Text {
         text: root.text;
-        color: root.accent;
+        color: root.highlighted ? #1e1e2e : root.accent;
         font-size: 13px;
         vertical-alignment: center;
     }
-    touch := TouchArea { clicked => { root.clicked(); } }
+    touch := TouchArea {
+        clicked => { root.clicked(); }
+        scroll-event(event) => {
+            root.scrolled(event.delta-y);
+            accept
+        }
+    }
 }
 
 export component Bar inherits PanelWindow {
@@ -28,23 +36,63 @@ export component Bar inherits PanelWindow {
     preferred-height: 34px;
     background: #1e1e2ee6;
 
+    init => {
+        Clock.time-format = "%H:%M:%S";
+    }
+
     HorizontalLayout {
-        padding-left: 10px;
-        padding-right: 10px;
-        spacing: 8px;
-        alignment: space-between;
+        padding-left: 8px;
+        padding-right: 8px;
+        spacing: 6px;
+
+        // Workspaces of this screen.
+        HorizontalLayout {
+            spacing: 4px;
+            alignment: start;
+            for ws in Workspaces.all: Chip {
+                visible: ws.output == Shell.screen.name;
+                text: ws.name != "" ? ws.name : ws.index;
+                highlighted: ws.active;
+                accent: ws.urgent ? #f38ba8 : #cdd6f4;
+                clicked => { Workspaces.focus(ws.id); }
+            }
+        }
+
+        Text {
+            horizontal-stretch: 1;
+            text: Workspaces.focused-window.title;
+            color: #bac2de;
+            font-size: 13px;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+
+        Chip { text: Clock.date + "  " + Clock.time; accent: #f9e2af; }
 
         HorizontalLayout {
-            spacing: 8px;
-            alignment: start;
-            Chip { text: "apps"; clicked => { Shell.exec("fuzzel || wofi --show drun"); } }
-            Chip { text: Shell.compositor; accent: #a6e3a1; }
-        }
-        HorizontalLayout {
-            spacing: 8px;
+            spacing: 4px;
             alignment: end;
-            Chip { text: Shell.screen.name + " · " + Shell.renderer; accent: #f9e2af; }
-            Chip { text: "reload"; accent: #cba6f7; clicked => { Shell.reload(); } }
+            Chip {
+                text: "cpu " + round(System.cpu * 100) + "%";
+                accent: System.cpu > 0.8 ? #f38ba8 : #a6e3a1;
+            }
+            Chip { text: "mem " + round(System.memory * 100) + "%"; accent: #94e2d5; }
+            Chip {
+                visible: Audio.available;
+                text: Audio.output.muted ? "muted" : "vol " + round(Audio.output.volume * 100) + "%";
+                accent: #89dceb;
+                clicked => { Audio.toggle-muted(); }
+                scrolled(delta) => {
+                    Audio.set-volume(clamp(Audio.output.volume + (delta > 0 ? 0.05 : -0.05), 0, 1.5));
+                }
+            }
+            Chip {
+                visible: Battery.available;
+                text: (Battery.charging ? "chg " : "bat ") + round(Battery.level * 100) + "%";
+                accent: Battery.level < 0.2 && !Battery.charging ? #f38ba8 : #a6e3a1;
+            }
+            Chip { visible: Workspaces.keyboard-layout != ""; text: Workspaces.keyboard-layout; accent: #b4befe; }
+            Chip { text: "apps"; accent: #cba6f7; clicked => { Shell.exec("fuzzel || wofi --show drun"); } }
         }
     }
 }

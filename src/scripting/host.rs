@@ -82,6 +82,7 @@ impl ShellHost {
         self.entries.borrow_mut().clear();
         *self.definitions.borrow_mut() = definitions;
         self.instantiate();
+        super::globals::refresh(self);
         true
     }
 
@@ -99,6 +100,13 @@ impl ShellHost {
             bridge::apply_callback(&entry.instance, global, callback, handler.clone());
         }
         self.bridge.set_callback(global, callback, handler);
+    }
+
+    /// Runs `f` for every window instance, e.g. for per-instance values like formatted time.
+    pub fn each_instance(&self, f: impl Fn(&ComponentInstance)) {
+        let instances: Vec<_> =
+            self.entries.borrow().iter().map(|e| e.instance.clone_strong()).collect();
+        instances.iter().for_each(f);
     }
 
     /// Adds panels for new outputs, removes those of vanished ones and refreshes screen info.

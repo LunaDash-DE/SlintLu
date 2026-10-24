@@ -161,18 +161,31 @@ impl GpuWindow {
         self.configured_size.set((width, height));
     }
 
+    fn acquire(&self, width: u32, height: u32) -> Option<wgpu::SurfaceTexture> {
+        match self.surface.get_current_texture() {
+            wgpu::CurrentSurfaceTexture::Success(t) => Some(t),
+            wgpu::CurrentSurfaceTexture::Suboptimal(t) => {
+                log::debug!("suboptimal swapchain at {width}x{height}");
+                Some(t)
+            }
+            other => {
+                log::debug!("swapchain image unavailable: {other:?}");
+                None
+            }
+        }
+    }
+
     pub fn render(&self, width: u32, height: u32) -> Result<(), String> {
         if self.configured_size.get() != (width, height) {
             self.configure(width, height);
         }
-        let texture = match self.surface.get_current_texture() {
-            wgpu::CurrentSurfaceTexture::Success(t)
-            | wgpu::CurrentSurfaceTexture::Suboptimal(t) => t,
-            wgpu::CurrentSurfaceTexture::Outdated | wgpu::CurrentSurfaceTexture::Lost => {
+        let texture = match self.acquire(width, height) {
+            Some(texture) => texture,
+            // Reconfigure once (resizes make the swapchain outdated) and try again.
+            None => {
                 self.configure(width, height);
-                return Err("swapchain was out of date, reconfigured".into());
+                self.acquire(width, height).ok_or("cannot acquire a swapchain image")?
             }
-            other => return Err(format!("cannot acquire a swapchain image: {other:?}")),
         };
         self.renderer.render_to_texture(&texture.texture).map_err(|e| e.to_string())?;
         self.gpu.queue.present(texture);

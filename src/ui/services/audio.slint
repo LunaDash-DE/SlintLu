@@ -1,0 +1,26 @@
+export struct AudioDevice {
+    name: string,
+    description: string,
+    // 1.0 is 100 %.
+    volume: float,
+    muted: bool,
+}
+
+// Volume and devices of the sound server (PipeWire or PulseAudio).
+export global Audio {
+    in property <bool> available;
+    // The default output (speakers) and input (microphone).
+    in property <AudioDevice> output;
+    in property <AudioDevice> input;
+    in property <[AudioDevice]> outputs;
+    in property <[AudioDevice]> inputs;
+
+    callback set-volume(volume: float);
+    callback set-muted(muted: bool);
+    callback toggle-muted();
+    callback set-input-volume(volume: float);
+    callback toggle-input-muted();
+    // Selects a device by its `name`.
+    callback set-default-output(name: string);
+    callback set-default-input(name: string);
+}

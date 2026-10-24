@@ -1,0 +1,43 @@
+export struct Temperature {
+    label: string,
+    celsius: float,
+}
+
+// Machine statistics, refreshed every two seconds.
+export global System {
+    // Utilisation in 0..1.
+    in property <float> cpu;
+    in property <[float]> cpu-cores;
+    in property <float> memory;
+    in property <float> swap;
+    // Root filesystem.
+    in property <float> disk;
+    // Human readable, e.g. "5.2 GiB / 15.6 GiB".
+    in property <string> memory-text;
+    in property <string> disk-text;
+    // Highest sensor reading in °C, and all sensors.
+    in property <float> temperature;
+    in property <[Temperature]> temperatures;
+    // Bytes per second over physical interfaces, and as text ("1.2 MB/s").
+    in property <float> download;
+    in property <float> upload;
+    in property <string> download-text;
+    in property <string> upload-text;
+    in property <string> hostname;
+    in property <string> kernel;
+    in property <string> os;
+    // e.g. "3h 12m".
+    in property <string> uptime;
+}
+
+// The system battery, if any.
+export global Battery {
+    in property <bool> available;
+    // Charge in 0..1.
+    in property <float> level;
+    in property <bool> charging;
+    // "charging", "discharging", "full", "not-charging" or "unknown".
+    in property <string> state;
+    // Until empty or full, e.g. "1h 20m"; empty when unknown.
+    in property <string> time-remaining;
+}

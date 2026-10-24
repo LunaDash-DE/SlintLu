@@ -6,6 +6,13 @@ all-features = true
 [advisories]
 version = 2
 yanked = "deny"
+ignore = [
+    # zbus 5's helper crates, merged into zbus 6. They only reach the lockfile through Slint's
+    # optional winit backend, which SlintLu never builds; SlintLu itself uses zbus 6.
+    { id = "RUSTSEC-2026-0370", reason = "transitive via slint's unused winit backend" },
+    { id = "RUSTSEC-2026-0371", reason = "transitive via slint's unused winit backend" },
+    { id = "RUSTSEC-2026-0372", reason = "transitive via slint's unused winit backend" },
+]
 
 [licenses]
 version = 2

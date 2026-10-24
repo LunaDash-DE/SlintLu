@@ -3942,6 +3942,7 @@ name = "slintlu"
 version = "0.1.0"
 dependencies = [
  "bytemuck",
+ "chrono",
  "clap",
  "env_logger",
  "khronos-egl",
@@ -3949,6 +3950,9 @@ dependencies = [
  "notify",
  "pollster",
  "raw-window-handle",
+ "rustix 1.1.5",
+ "serde",
+ "serde_json",
  "slint",
  "slint-interpreter",
  "smithay-client-toolkit",
