@@ -46,20 +46,28 @@ impl Ini {
 pub fn list(value: &str) -> Vec<String> {
     let mut items = Vec::new();
     let mut current = String::new();
-    let mut chars = value.chars();
-    while let Some(c) = chars.next() {
-        match c {
-            '\\' => match chars.next() {
-                Some(';') => current.push(';'),
-                Some(other) => {
+    let mut escaped: bool = false;
+    for c in value.chars() {
+        if escaped {
+            match c {
+                ';' => current.push(';'),
+                _ => {
                     current.push('\\');
-                    current.push(other);
+                    current.push(c);
                 }
-                None => current.push('\\'),
-            },
-            ';' => items.push(std::mem::take(&mut current)),
-            c => current.push(c),
+            }
+            escaped = false;
+        } else if c == '\\' {
+            escaped = true;
+        } else if c == ';' {
+            items.push(std::mem::take(&mut current));
+        } else {
+            current.push(c);
         }
+    }
+
+    if escaped {
+        current.push('\\');
     }
     items.push(current);
     items.into_iter().map(|s| s.trim().to_owned()).filter(|s| !s.is_empty()).collect()
