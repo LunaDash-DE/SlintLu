@@ -36,6 +36,21 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# Reports a failure as a GitHub annotation (readable without log access) and exits.
+fail() {
+    local log=""
+    [[ -f "$work/app.log" ]] && log="$(grep -v '^\s' "$work/app.log" | tail -n 15)"
+    if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+        local message="$1"$'\n'"$log"
+        message="${message//'%'/'%25'}"
+        message="${message//$'\n'/'%0A'}"
+        echo "::error title=headless ${renderer}::${message}"
+    fi
+    echo "$1" >&2
+    [[ -n "$log" ]] && echo "$log" >&2
+    exit 1
+}
+
 cat > "$work/sway.conf" <<CONF
 output HEADLESS-1 resolution 1280x720 background #000000 solid_color
 default_border none
@@ -52,7 +67,7 @@ for _ in $(seq 100); do
     sleep 0.1
 done
 if [[ -z "${socket:-}" ]]; then
-    cat "$work/sway.log"; echo "sway did not start" >&2; exit 1
+    cat "$work/sway.log"; fail "sway did not start"
 fi
 export WAYLAND_DISPLAY="$(basename "$socket")"
 # Only talk to the headless sway, never to the compositor this script was started from.
@@ -73,7 +88,7 @@ app=$!
 pids+=($app)
 sleep "${SETTLE_SECONDS:-4}"
 if ! kill -0 "$app" 2>/dev/null; then
-    cat "$work/app.log"; echo "the shell exited early" >&2; exit 1
+    fail "the shell exited early"
 fi
 cat "$work/app.log"
 echo "::endgroup::"
@@ -89,7 +104,7 @@ if [[ "$(basename "${cmd[0]}")" == slintlu ]]; then
     available="$("${cmd[0]}" msg get Workspaces.available)"
     echo "Workspaces.available = $available"
     if [[ -n "${SWAYSOCK:-}" && "$available" != true ]]; then
-        echo "sway workspaces were not picked up" >&2; exit 1
+        fail "sway workspaces were not picked up"
     fi
     "${cmd[0]}" msg get Workspaces.all
     if [[ "$("${cmd[0]}" msg get Notifications.available)" == true ]] && command -v notify-send >/dev/null; then
@@ -97,7 +112,7 @@ if [[ "$(basename "${cmd[0]}")" == slintlu ]]; then
         sleep 0.5
         count="$("${cmd[0]}" msg get Notifications.count)"
         echo "Notifications.count = $count"
-        [[ "$count" == 1 ]] || { echo "the notification did not arrive" >&2; exit 1; }
+        [[ "$count" == 1 ]] || fail "the notification did not arrive"
         "${cmd[0]}" msg call Notifications.dismiss-all
     fi
     # The session lock: lock, then a wrong password through a PAM service that denies
@@ -106,19 +121,19 @@ if [[ "$(basename "${cmd[0]}")" == slintlu ]]; then
     sleep 1
     locked="$("${cmd[0]}" msg get Session.locked)"
     echo "Session.locked = $locked"
-    [[ "$locked" == true ]] || { echo "the session did not lock" >&2; exit 1; }
+    [[ "$locked" == true ]] || fail "the session did not lock"
     # Every documented global property must be readable.
-    python3 scripts/api-smoke.py "${cmd[0]}"
+    python3 scripts/api-smoke.py "${cmd[0]}" || fail "some global properties are unreadable"
     actual="$("${cmd[0]}" msg get Shell.renderer)"
     echo "Shell.renderer = $actual"
     if [[ "$renderer" != auto && "$actual" != "$renderer" ]]; then
-        echo "asked for the $renderer renderer but got $actual" >&2; exit 1
+        fail "asked for the $renderer renderer but got $actual"
     fi
     echo "::endgroup::"
 fi
 
 
-python3 - "$work/shot.ppm" "${CHECK_BAR:-1}" <<'PY'
+if python3 - "$work/shot.ppm" "${CHECK_BAR:-1}" <<'PY'
 import sys
 
 check_bar = (sys.argv[2] if len(sys.argv) > 2 else "1") != "0"
@@ -144,3 +159,4 @@ if max(bottom) > 0.05:
     sys.exit("unexpected content in the middle of the screen")
 print("headless render check passed")
 PY
+then :; else fail "the screenshot check failed"; fi
