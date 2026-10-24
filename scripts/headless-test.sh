@@ -48,7 +48,16 @@ if [[ -z "${socket:-}" ]]; then
     cat "$work/sway.log"; echo "sway did not start" >&2; exit 1
 fi
 export WAYLAND_DISPLAY="$(basename "$socket")"
-echo "sway is listening on $WAYLAND_DISPLAY"
+# Only talk to the headless sway, never to the compositor this script was started from.
+unset NIRI_SOCKET HYPRLAND_INSTANCE_SIGNATURE I3SOCK
+export XDG_CURRENT_DESKTOP=sway
+for _ in $(seq 50); do
+    SWAYSOCK="$(find "$XDG_RUNTIME_DIR" -maxdepth 1 -name 'sway-ipc.*.sock' -print -quit)"
+    [[ -n "$SWAYSOCK" ]] && break
+    sleep 0.1
+done
+export SWAYSOCK
+echo "sway is listening on $WAYLAND_DISPLAY (IPC: ${SWAYSOCK:-none})"
 echo "::endgroup::"
 
 echo "::group::launching ${cmd[*]} with the $renderer renderer"
@@ -61,6 +70,25 @@ if ! kill -0 "$app" 2>/dev/null; then
 fi
 cat "$work/app.log"
 echo "::endgroup::"
+
+# Exercise the IPC socket when testing the slintlu runtime.
+if [[ "$(basename "${cmd[0]}")" == slintlu ]]; then
+    echo "::group::IPC"
+    "${cmd[0]}" msg ping
+    "${cmd[0]}" msg windows
+    available="$("${cmd[0]}" msg get Workspaces.available)"
+    echo "Workspaces.available = $available"
+    if [[ -n "${SWAYSOCK:-}" && "$available" != true ]]; then
+        echo "sway workspaces were not picked up" >&2; exit 1
+    fi
+    "${cmd[0]}" msg get Workspaces.all
+    actual="$("${cmd[0]}" msg get Shell.renderer)"
+    echo "Shell.renderer = $actual"
+    if [[ "$renderer" != auto && "$actual" != "$renderer" ]]; then
+        echo "asked for the $renderer renderer but got $actual" >&2; exit 1
+    fi
+    echo "::endgroup::"
+fi
 
 grim -t ppm "$work/shot.ppm"
 cp "$work/shot.ppm" "${SCREENSHOT:-/dev/null}" 2>/dev/null || true

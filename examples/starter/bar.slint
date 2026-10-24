@@ -43,6 +43,9 @@ export component Bar inherits PanelWindow {
     HorizontalLayout {
         padding-left: 8px;
         padding-right: 8px;
+        // Chips are 24px high; the padding makes the layout (and so the bar) 34px.
+        padding-top: 5px;
+        padding-bottom: 5px;
         spacing: 6px;
 
         // Workspaces of this screen.
