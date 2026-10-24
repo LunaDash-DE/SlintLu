@@ -29,7 +29,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
-      - uses: extractions/setup-just@v3
+      - uses: extractions/setup-just@v4
       - run: just fmt-check
 
   typos:
@@ -61,7 +61,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
-      - uses: extractions/setup-just@v3
+      - uses: extractions/setup-just@v4
       # Dependency cache: ~/.cargo registry/git + compiled dependencies in target/.
       - uses: Swatinem/rust-cache@v2
         with:
@@ -87,7 +87,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.toolchain }}
-      - uses: extractions/setup-just@v3
+      - uses: extractions/setup-just@v4
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: test-${{ matrix.toolchain }}
@@ -114,7 +114,7 @@ jobs:
           packages: ${{ env.BUILD_PACKAGES }} sway grim fonts-dejavu-core libegl1 libgles2 libegl-mesa0 mesa-vulkan-drivers libvulkan1
           version: headless-1
       - uses: dtolnay/rust-toolchain@stable
-      - uses: extractions/setup-just@v3
+      - uses: extractions/setup-just@v4
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: test-stable
