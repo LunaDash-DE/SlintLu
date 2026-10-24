@@ -9,8 +9,15 @@ license = "GPL-3.0-only"
 keywords = ["wayland", "slint", "desktop-shell", "layer-shell", "gui"]
 categories = ["gui"]
 
+[[bin]]
+name = "slintlu"
+path = "src/main.rs"
+required-features = ["runtime"]
+
 [features]
-default = ["opengl", "vulkan"]
+default = ["runtime", "opengl", "vulkan"]
+## The `slintlu` executable: loads shells written in the Slint language at runtime.
+runtime = ["dep:slint-interpreter", "dep:clap", "dep:env_logger", "dep:notify", "dep:pollster"]
 ## FemtoVG on OpenGL ES through EGL (libEGL is loaded at runtime).
 opengl = ["slint/renderer-femtovg", "dep:khronos-egl", "dep:wayland-egl"]
 ## FemtoVG on wgpu with the Vulkan backend.
@@ -29,6 +36,11 @@ wgpu = { version = "30", default-features = false, features = ["std", "parking_l
 raw-window-handle = { version = "0.6", optional = true }
 pollster = { version = "0.4", optional = true }
 
+slint-interpreter = { version = "~1.18", default-features = false, features = ["std", "compat-1-2", "display-diagnostics"], optional = true }
+clap = { version = "4", features = ["derive", "env"], optional = true }
+env_logger = { version = "0.11", optional = true }
+notify = { version = "8", default-features = false, optional = true }
+
 [lints.rust]
 unsafe_op_in_unsafe_fn = "deny"
 
@@ -46,3 +58,4 @@ opt-level = 2
 
 [dev-dependencies]
 env_logger = "0.11"
+tempfile = "3"

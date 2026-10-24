@@ -1,50 +1,66 @@
-# 測試指南
+# Testing
 
-## 1. 準備
+## 1. Setup
 
 ```bash
 # Arch Linux
 sudo pacman -S --needed rust just wayland libxkbcommon fontconfig
-# 選用：headless 整合測試、截圖、靜態檢查
+# Optional: headless integration test and screenshots
 sudo pacman -S --needed sway grim
+# Optional: the same static checks CI runs
 cargo install --locked cargo-deny typos-cli
 ```
 
-## 2. 不需要合成器的測試
+On Debian/Ubuntu: `sudo apt install just pkg-config libwayland-dev libxkbcommon-dev libfontconfig-dev`.
+
+## 2. Without a compositor
 
 ```bash
-just test        # 單元測試 + doctest
-just lint        # clippy（含 / 不含 GPU renderer 兩種 feature 組合）
-just doc         # 文件建置
-just ci          # 以上全部 + 格式檢查（等同 CI）
+just test        # unit tests, CLI integration tests, doctests
+just lint        # clippy with and without the GPU renderers
+just doc         # API documentation
+just check       # compile the starter shell and print diagnostics
+just ci          # everything above plus the format check (same as CI)
+just deny        # licences and security advisories
+just typos       # spelling
 ```
 
-## 3. 在你目前的 Wayland session 實測
+## 3. In your Wayland session
 
-在 niri / Hyprland / Sway 等支援 layer-shell 的合成器內執行：
+Inside a compositor with layer-shell (niri, Hyprland, Sway, …):
 
 ```bash
-just example hello_bar software
-just example hello_bar opengl
-just example hello_bar vulkan
+just run examples/starter software
+just run examples/starter opengl
+just run examples/starter vulkan
 ```
 
-應該會在每個螢幕頂端出現一條 bar，右側顯示實際使用的 renderer，點擊 `clicks` 按鈕數字會增加、滑過會有動畫。
-其他視窗應被 exclusive zone 往下推。`Ctrl+C` 結束。
+A bar appears at the top of every screen showing the compositor, the screen and the renderer
+actually in use; other windows move down to make room. Edit `examples/starter/bar.slint` while
+it runs — it reloads on save. Introduce a syntax error: the diagnostics are printed and the
+running bar stays. Press `Ctrl+C` to quit.
 
-`RUST_LOG=slintlu=debug` 會顯示 renderer 選擇與降級的過程，例如：
+More logging: `just run examples/starter auto -vv` or `RUST_LOG=slintlu=debug`:
 
 ```
-DEBUG slintlu::render] window uses the vulkan renderer
+INFO  slintlu::cli::run] compositor: niri, renderer: auto
 INFO  slintlu::render::gpu] Vulkan adapter: NVIDIA GeForce RTX 3050 (DiscreteGpu, driver NVIDIA)
 ```
 
-## 4. Headless 整合測試（與 CI 相同）
+The Rust library example: `just example hello_bar vulkan`.
 
-不會影響你目前的桌面：在獨立的 headless sway 中執行，用 grim 截圖並檢查頂端是否畫出 bar。
+## 4. Headless integration test (same as CI)
+
+Runs the shell in a separate headless sway, takes a screenshot with grim and checks that a bar
+was drawn along the top edge. It does not touch your desktop.
 
 ```bash
 just headless software
-just headless vulkan       # 需要 Vulkan 驅動（CI 上使用 Mesa lavapipe）
-KEEP_ARTIFACTS=1 just headless opengl   # 保留截圖與 log 以便除錯
+just headless vulkan                     # needs a Vulkan driver (CI uses Mesa lavapipe)
+KEEP_ARTIFACTS=1 just headless opengl    # keep the screenshot and logs for debugging
 ```
+
+## 5. Pull requests
+
+Opening a pull request runs CI plus the PR review workflow (title check, dependency review,
+inline clippy comments, coverage summary, labels). See [CONTRIBUTING.md](../CONTRIBUTING.md).

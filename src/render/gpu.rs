@@ -84,6 +84,10 @@ impl GpuContext {
             ..Default::default()
         }))
         .map_err(|e| format!("cannot open the Vulkan device: {e}"))?;
+        // wgpu panics on validation errors by default; a shell must keep running instead.
+        device.on_uncaptured_error(std::sync::Arc::new(|error| {
+            log::error!("wgpu error: {error}");
+        }));
 
         Ok((Rc::new(Self { instance, adapter, device, queue }), wgpu_surface))
     }

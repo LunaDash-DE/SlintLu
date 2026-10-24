@@ -1,0 +1,251 @@
+//! [`ShellHost`]: owns the compiled shell and its window instances.
+
+use std::cell::RefCell;
+use std::path::PathBuf;
+use std::rc::Rc;
+
+use slint::ComponentHandle;
+use slint_interpreter::{ComponentDefinition, ComponentInstance, Value};
+use slintlu::{OutputInfo, SurfaceRole};
+
+use super::bridge::{self, Bridge, Handler};
+use super::compiler;
+use super::panel::{self, PanelSpec, WindowKind};
+
+/// One live window of the shell.
+struct Entry {
+    component: String,
+    /// The output a panel belongs to; `None` for floating windows.
+    output: Option<u32>,
+    instance: ComponentInstance,
+}
+
+impl Drop for Entry {
+    fn drop(&mut self) {
+        // A shown window keeps its component alive; hide it so it is really released.
+        let _ = self.instance.hide();
+    }
+}
+
+pub struct ShellHost {
+    config: PathBuf,
+    definitions: RefCell<Vec<ComponentDefinition>>,
+    entries: RefCell<Vec<Entry>>,
+    bridge: Bridge,
+}
+
+thread_local! {
+    static HOST: RefCell<Option<Rc<ShellHost>>> = const { RefCell::new(None) };
+}
+
+/// Runs `f` with the host of this thread, if one is running.
+pub fn with<R>(f: impl FnOnce(&Rc<ShellHost>) -> R) -> Option<R> {
+    let host = HOST.with(|h| h.borrow().clone())?;
+    Some(f(&host))
+}
+
+/// Runs `f` on the Slint event loop with the host. Usable from any thread.
+pub fn post(f: impl FnOnce(&Rc<ShellHost>) + Send + 'static) {
+    let _ = slint::invoke_from_event_loop(move || {
+        with(f);
+    });
+}
+
+impl ShellHost {
+    /// Creates the host and makes it reachable through [`with`] and [`post`].
+    pub fn install(config: PathBuf) -> Rc<Self> {
+        let host = Rc::new(Self {
+            config,
+            definitions: Default::default(),
+            entries: Default::default(),
+            bridge: Bridge::default(),
+        });
+        HOST.with(|h| *h.borrow_mut() = Some(host.clone()));
+        host
+    }
+
+    /// Compiles the configuration and replaces all windows. On compile errors the running shell
+    /// is kept and `false` is returned.
+    pub fn load(&self) -> bool {
+        let compiled = match compiler::compile(&self.config) {
+            Ok(compiled) => compiled,
+            Err(diagnostics) => {
+                slint_interpreter::print_diagnostics(&diagnostics);
+                log::error!("{} has errors, keeping the current shell", self.config.display());
+                return false;
+            }
+        };
+        let definitions: Vec<_> = compiled.result.components().collect();
+        log::info!("loaded {} ({} exported components)", self.config.display(), definitions.len());
+        // Drop the old windows before creating new ones, so namespaces and exclusive zones
+        // never overlap.
+        self.entries.borrow_mut().clear();
+        *self.definitions.borrow_mut() = definitions;
+        self.instantiate();
+        true
+    }
+
+    /// Publishes a global property value to all windows, now and after reloads.
+    pub fn set_global(&self, global: &str, property: &str, value: Value) {
+        for entry in self.entries.borrow().iter() {
+            bridge::apply_property(&entry.instance, global, property, value.clone());
+        }
+        self.bridge.set_property(global, property, value);
+    }
+
+    /// Implements a global callback natively in all windows, now and after reloads.
+    pub fn on_callback(&self, global: &str, callback: &str, handler: Handler) {
+        for entry in self.entries.borrow().iter() {
+            bridge::apply_callback(&entry.instance, global, callback, handler.clone());
+        }
+        self.bridge.set_callback(global, callback, handler);
+    }
+
+    /// Adds panels for new outputs, removes those of vanished ones and refreshes screen info.
+    pub fn outputs_changed(&self) {
+        let outputs = slintlu::outputs();
+        self.entries
+            .borrow_mut()
+            .retain(|e| e.output.is_none_or(|id| outputs.iter().any(|o| o.id == id)));
+        self.set_global("Shell", "screens", bridge::screens_value(&outputs));
+        for entry in self.entries.borrow().iter() {
+            if let Some(output) = outputs.iter().find(|o| Some(o.id) == entry.output) {
+                bridge::apply_property(
+                    &entry.instance,
+                    "Shell",
+                    "screen",
+                    bridge::screen_value(output),
+                );
+            }
+        }
+        self.instantiate();
+    }
+
+    /// Creates every missing window.
+    fn instantiate(&self) {
+        let outputs = slintlu::outputs();
+        self.set_global("Shell", "screens", bridge::screens_value(&outputs));
+        let definitions = self.definitions.borrow().clone();
+        for definition in &definitions {
+            self.instantiate_component(definition, &outputs);
+        }
+    }
+
+    fn instantiate_component(&self, definition: &ComponentDefinition, outputs: &[OutputInfo]) {
+        let name = definition.name().to_string();
+        let has = |output: Option<u32>| {
+            self.entries.borrow().iter().any(|e| e.component == name && e.output == output)
+        };
+        if has(None) {
+            return;
+        }
+
+        // Panels: one instance per matching output.
+        for output in outputs {
+            if has(Some(output.id)) {
+                continue;
+            }
+            let Some(instance) = self.create(definition, Some(output)) else { return };
+            match panel::window_kind(&instance) {
+                WindowKind::Panel(spec) => {
+                    if spec.shows_on(&output.name) {
+                        self.show_panel(&name, instance, spec, output.id);
+                    }
+                }
+                WindowKind::Floating { app_id } => {
+                    self.show_floating(&name, instance, app_id);
+                    return;
+                }
+                WindowKind::Other => {
+                    log::debug!("{name} is not a PanelWindow or FloatingWindow, skipping it");
+                    return;
+                }
+            }
+        }
+
+        // No outputs yet: floating windows can still be shown.
+        if outputs.is_empty()
+            && let Some(instance) = self.create(definition, None)
+            && let WindowKind::Floating { app_id } = panel::window_kind(&instance)
+        {
+            self.show_floating(&name, instance, app_id);
+        }
+    }
+
+    fn create(
+        &self,
+        definition: &ComponentDefinition,
+        output: Option<&OutputInfo>,
+    ) -> Option<ComponentInstance> {
+        let instance = definition
+            .create()
+            .inspect_err(|e| log::error!("cannot create {}: {e}", definition.name()))
+            .ok()?;
+        self.bridge.apply(&instance);
+        if let Some(output) = output {
+            bridge::apply_property(&instance, "Shell", "screen", bridge::screen_value(output));
+        }
+        Some(instance)
+    }
+
+    fn show_panel(&self, name: &str, instance: ComponentInstance, spec: PanelSpec, output: u32) {
+        let Some(window) = slintlu::window_for(instance.window()) else { return };
+        let role = move |spec: &PanelSpec| {
+            SurfaceRole::Layer(slintlu::LayerConfig { output: Some(output), ..spec.layer.clone() })
+        };
+        window.set_role(role(&spec));
+        bridge::apply_property(
+            &instance,
+            "Shell",
+            "renderer",
+            bridge::string(window.renderer_kind().as_str()),
+        );
+
+        // Follow later changes of the panel's properties (anchors, layer, `shown` …).
+        let weak = instance.as_weak();
+        let window_weak = Rc::downgrade(&window);
+        let _ = instance.set_global_callback("SlintLuRuntime", "panel-changed", move |_| {
+            if let (Some(instance), Some(window)) = (weak.upgrade(), window_weak.upgrade())
+                && let WindowKind::Panel(spec) = panel::window_kind(&instance)
+            {
+                window.set_role(role(&spec));
+                let result = if spec.shown { instance.show() } else { instance.hide() };
+                if let Err(e) = result {
+                    log::error!("cannot change panel visibility: {e}");
+                }
+            }
+            Value::Void
+        });
+
+        if spec.shown
+            && let Err(e) = instance.show()
+        {
+            log::error!("cannot show {name}: {e}");
+        }
+        self.entries.borrow_mut().push(Entry {
+            component: name.to_string(),
+            output: Some(output),
+            instance,
+        });
+    }
+
+    fn show_floating(&self, name: &str, instance: ComponentInstance, app_id: String) {
+        if let Some(window) = slintlu::window_for(instance.window()) {
+            window.set_role(SurfaceRole::Toplevel { app_id });
+            bridge::apply_property(
+                &instance,
+                "Shell",
+                "renderer",
+                bridge::string(window.renderer_kind().as_str()),
+            );
+        }
+        if let Err(e) = instance.show() {
+            log::error!("cannot show {name}: {e}");
+        }
+        self.entries.borrow_mut().push(Entry {
+            component: name.to_string(),
+            output: None,
+            instance,
+        });
+    }
+}

@@ -1,0 +1,29 @@
+import { PanelSettings, Screen } from "types.slint";
+
+// Information about the running shell and actions it can perform.
+export global Shell {
+    // The screen this window instance is shown on.
+    in property <Screen> screen;
+    // All connected screens.
+    in property <[Screen]> screens;
+    // The renderer in use: "software", "opengl" or "vulkan".
+    in property <string> renderer;
+    // The compositor, e.g. "niri", "hyprland", "sway" or "unknown".
+    in property <string> compositor;
+    in property <string> version;
+
+    // Runs a command line through `sh -c`, detached from the shell.
+    callback exec(command: string);
+    // Reloads the shell configuration.
+    callback reload();
+    // Exits SlintLu.
+    callback quit();
+}
+
+// Internal channel through which windows describe themselves to the runtime.
+export global SlintLuRuntime {
+    in-out property <string> kind;
+    in-out property <PanelSettings> panel;
+    in-out property <string> app-id;
+    callback panel-changed();
+}

@@ -10,6 +10,7 @@ yanked = "deny"
 [licenses]
 version = 2
 confidence-threshold = 0.9
+unused-allowed-license = "allow"
 allow = [
     "GPL-3.0-only",
     "GPL-3.0-or-later",

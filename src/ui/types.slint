@@ -1,0 +1,58 @@
+// Plain types shared by the SlintLu library.
+
+// The layer-shell layer, from the bottom of the stack to the top.
+export enum Layer { background, bottom, top, overlay }
+
+// How a panel receives keyboard focus.
+export enum KeyboardMode {
+    // Never (bars, wallpapers).
+    none,
+    // Grabs the keyboard while visible (launchers, lock screens).
+    exclusive,
+    // When clicked, like a normal window.
+    on-demand,
+}
+
+// How much space a panel reserves at the edge it is anchored to.
+export enum ExclusiveMode {
+    // Its own height (width for vertical panels) when anchored to one edge.
+    auto,
+    // Nothing, but other panels' zones are respected.
+    normal,
+    // Nothing, and other panels' zones are ignored (wallpapers, overlays).
+    ignore,
+    // Exactly `exclusive-zone`.
+    fixed,
+}
+
+// A monitor.
+export struct Screen {
+    id: int,
+    // Connector name, e.g. "DP-1".
+    name: string,
+    description: string,
+    x: int,
+    y: int,
+    width: int,
+    height: int,
+    scale: int,
+}
+
+// What a PanelWindow reports to the runtime. Set the PanelWindow properties instead.
+export struct PanelSettings {
+    layer: Layer,
+    namespace: string,
+    anchor-top: bool,
+    anchor-bottom: bool,
+    anchor-left: bool,
+    anchor-right: bool,
+    exclusive-mode: ExclusiveMode,
+    exclusive-zone: length,
+    margin-top: length,
+    margin-right: length,
+    margin-bottom: length,
+    margin-left: length,
+    keyboard-mode: KeyboardMode,
+    show-on: [string],
+    shown: bool,
+}

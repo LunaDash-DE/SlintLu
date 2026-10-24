@@ -4,7 +4,7 @@
 #
 # Usage: scripts/headless-test.sh [renderer] [-- command ...]
 #   renderer  auto | software | opengl | vulkan   (default: software)
-#   command   what to launch (default: the hello_bar example)
+#   command   what to launch (default: the starter shell)
 #
 # Needs: sway, grim, python3.
 set -euo pipefail
@@ -15,7 +15,7 @@ if [[ "${1:-}" == "--" ]]; then shift; fi
 if [[ $# -gt 0 ]]; then
     cmd=("$@")
 else
-    cmd=(target/debug/examples/hello_bar)
+    cmd=(target/debug/slintlu --no-reload --config examples/starter)
 fi
 
 work="$(mktemp -d)"

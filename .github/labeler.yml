@@ -1,0 +1,18 @@
+platform:
+  - changed-files:
+      - any-glob-to-any-file: ["src/core/**", "src/input/**", "src/output/**", "src/shell/**", "src/window/**"]
+render:
+  - changed-files:
+      - any-glob-to-any-file: ["src/render/**"]
+runtime:
+  - changed-files:
+      - any-glob-to-any-file: ["src/cli/**", "src/config/**", "src/scripting/**", "src/ui/**", "src/main.rs"]
+services:
+  - changed-files:
+      - any-glob-to-any-file: ["src/compositors/**", "src/system/**", "src/time/**", "src/audio/**", "src/dbus/**", "src/ipc/**", "src/i18n/**", "src/launcher/**", "src/notification/**", "src/security/**", "src/idle/**", "src/theme/**", "src/net/**"]
+ci:
+  - changed-files:
+      - any-glob-to-any-file: [".github/**", "justfile", "scripts/**", "deny.toml"]
+docs:
+  - changed-files:
+      - any-glob-to-any-file: ["docs/**", "*.md"]

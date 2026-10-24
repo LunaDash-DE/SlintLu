@@ -1,0 +1,50 @@
+import { PanelWindow, Shell } from "@slintlu";
+
+component Chip inherits Rectangle {
+    in property <string> text;
+    in property <color> accent: #89b4fa;
+    callback clicked();
+
+    height: 24px;
+    width: label.preferred-width + 20px;
+    border-radius: 12px;
+    background: touch.pressed ? #585b70 : touch.has-hover ? #45475a : #313244;
+    animate background { duration: 120ms; }
+
+    label := Text {
+        text: root.text;
+        color: root.accent;
+        font-size: 13px;
+        vertical-alignment: center;
+    }
+    touch := TouchArea { clicked => { root.clicked(); } }
+}
+
+export component Bar inherits PanelWindow {
+    namespace: "slintlu-bar";
+    anchor-top: true;
+    anchor-left: true;
+    anchor-right: true;
+    preferred-height: 34px;
+    background: #1e1e2ee6;
+
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 10px;
+        spacing: 8px;
+        alignment: space-between;
+
+        HorizontalLayout {
+            spacing: 8px;
+            alignment: start;
+            Chip { text: "apps"; clicked => { Shell.exec("fuzzel || wofi --show drun"); } }
+            Chip { text: Shell.compositor; accent: #a6e3a1; }
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            alignment: end;
+            Chip { text: Shell.screen.name + " · " + Shell.renderer; accent: #f9e2af; }
+            Chip { text: "reload"; accent: #cba6f7; clicked => { Shell.reload(); } }
+        }
+    }
+}

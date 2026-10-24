@@ -1,0 +1,68 @@
+import { Layer, KeyboardMode, ExclusiveMode, PanelSettings } from "types.slint";
+import { SlintLuRuntime } from "runtime.slint";
+
+// A wlr-layer-shell surface: bars, docks, wallpapers, overlays, notifications …
+//
+// One instance is created per screen (restrict with `show-on`). Set its size with
+// `preferred-width` / `preferred-height` or let the layout decide; axes anchored on both
+// sides are stretched by the compositor.
+export component PanelWindow inherits Window {
+    in property <Layer> layer: Layer.top;
+    // Namespace reported to the compositor, e.g. for layer rules.
+    in property <string> namespace: "slintlu";
+    in property <bool> anchor-top;
+    in property <bool> anchor-bottom;
+    in property <bool> anchor-left;
+    in property <bool> anchor-right;
+    in property <ExclusiveMode> exclusive-mode: ExclusiveMode.auto;
+    // Used when `exclusive-mode` is `fixed`.
+    in property <length> exclusive-zone: 0px;
+    in property <length> margin-top: 0px;
+    in property <length> margin-right: 0px;
+    in property <length> margin-bottom: 0px;
+    in property <length> margin-left: 0px;
+    in property <KeyboardMode> keyboard-mode: KeyboardMode.none;
+    // Connector names of the screens to appear on, e.g. ["DP-1"]. Empty means all screens.
+    in property <[string]> show-on: [];
+    // Whether the panel is mapped. Toggle it to build popups, menus and drawers.
+    in-out property <bool> shown: true;
+
+    out property <PanelSettings> settings: {
+        layer: root.layer,
+        namespace: root.namespace,
+        anchor-top: root.anchor-top,
+        anchor-bottom: root.anchor-bottom,
+        anchor-left: root.anchor-left,
+        anchor-right: root.anchor-right,
+        exclusive-mode: root.exclusive-mode,
+        exclusive-zone: root.exclusive-zone,
+        margin-top: root.margin-top,
+        margin-right: root.margin-right,
+        margin-bottom: root.margin-bottom,
+        margin-left: root.margin-left,
+        keyboard-mode: root.keyboard-mode,
+        show-on: root.show-on,
+        shown: root.shown,
+    };
+
+    background: transparent;
+
+    init => {
+        SlintLuRuntime.kind = "panel";
+        SlintLuRuntime.panel = root.settings;
+    }
+    changed settings => {
+        SlintLuRuntime.panel = root.settings;
+        SlintLuRuntime.panel-changed();
+    }
+}
+
+// An ordinary application window (settings, dialogs …), shown once.
+export component FloatingWindow inherits Window {
+    in property <string> app-id: "slintlu";
+
+    init => {
+        SlintLuRuntime.kind = "window";
+        SlintLuRuntime.app-id = root.app-id;
+    }
+}

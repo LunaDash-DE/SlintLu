@@ -1,0 +1,123 @@
+name: PR review
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: pr-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  BUILD_PACKAGES: pkg-config libwayland-dev libxkbcommon-dev libfontconfig-dev
+
+jobs:
+  title:
+    name: Conventional PR title
+    runs-on: ubuntu-24.04
+    permissions:
+      pull-requests: read
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            perf
+            refactor
+            docs
+            test
+            build
+            ci
+            chore
+            revert
+
+  dependencies:
+    name: Dependency review
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: moderate
+          comment-summary-in-pr: on-failure
+
+  clippy:
+    name: Clippy review comments
+    runs-on: ubuntu-24.04
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          packages: ${{ env.BUILD_PACKAGES }}
+          version: build-1
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: lint
+          save-if: false
+      # Posts clippy findings as inline review comments on the changed lines.
+      - uses: giraffate/clippy-action@v1
+        with:
+          reporter: github-pr-review
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          clippy_flags: --all-targets
+          filter_mode: diff_context
+          fail_on_error: true
+
+  coverage:
+    name: Test coverage
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          packages: ${{ env.BUILD_PACKAGES }}
+          version: build-1
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-llvm-cov
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: coverage
+          save-if: false
+      - name: Measure coverage
+        run: cargo llvm-cov --all-targets --summary-only | tee coverage.txt
+      - name: Publish summary
+        run: |
+          {
+            echo '### Test coverage'
+            echo '```'
+            cat coverage.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  size:
+    name: Path labels
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/labeler@v5
+        with:
+          sync-labels: true

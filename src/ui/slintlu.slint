@@ -1,0 +1,11 @@
+// SlintLu standard library.
+//
+//     import { PanelWindow, Shell, Layer } from "@slintlu";
+//
+// Every exported component of your shell file that inherits `PanelWindow` becomes a
+// wlr-layer-shell surface on each screen; components inheriting `FloatingWindow` become
+// ordinary windows. Other components are ignored, so you can export helpers freely.
+
+export { Layer, KeyboardMode, ExclusiveMode, Screen, PanelSettings } from "types.slint";
+export { PanelWindow, FloatingWindow } from "windows.slint";
+export { Shell, SlintLuRuntime } from "runtime.slint";

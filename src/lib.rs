@@ -39,6 +39,7 @@
 //!
 //! [smithay-client-toolkit]: https://docs.rs/smithay-client-toolkit
 
+pub mod compositors;
 mod core;
 mod input;
 mod output;

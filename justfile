@@ -8,9 +8,17 @@ renderer := env("SLINTLU_RENDERER", "auto")
 default:
     @just --list --unsorted
 
-# Build the library and examples (debug)
+# Build everything (debug)
 build *args:
     cargo build --all-targets {{ args }}
+
+# Run a shell configuration (file or directory) with the chosen renderer
+run config="examples/starter" renderer=renderer *args:
+    cargo run -- --config {{ config }} --renderer {{ renderer }} {{ args }}
+
+# Compile-check a shell configuration without opening windows
+check config="examples/starter":
+    cargo run -- check {{ config }}
 
 # Run one of the Rust examples, e.g. `just example hello_bar vulkan`
 example name="hello_bar" renderer=renderer:
@@ -45,9 +53,9 @@ deny:
 typos:
     typos
 
-# Render the hello_bar example inside a headless sway and check the screenshot (needs sway + grim)
+# Render the starter shell inside a headless sway and check the screenshot (needs sway + grim)
 headless renderer="software":
-    cargo build --example hello_bar
+    cargo build
     scripts/headless-test.sh {{ renderer }}
 
 # Everything CI runs, in the same order
