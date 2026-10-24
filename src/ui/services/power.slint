@@ -1,0 +1,14 @@
+// Session and power actions through systemd-logind.
+export global Power {
+    in property <bool> available;
+    in property <bool> can-suspend;
+    in property <bool> can-hibernate;
+
+    callback power-off();
+    callback reboot();
+    callback suspend();
+    callback hibernate();
+    callback log-out();
+    // Locks the session (shows the shell's lock screen, if it has one).
+    callback lock();
+}

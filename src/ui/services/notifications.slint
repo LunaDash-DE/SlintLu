@@ -1,0 +1,41 @@
+export struct NotificationAction {
+    key: string,
+    label: string,
+}
+
+export struct NotificationInfo {
+    id: int,
+    app-name: string,
+    // Icon name or path, as sent by the application.
+    app-icon: string,
+    // Path of an attached image, if any.
+    image: string,
+    summary: string,
+    body: string,
+    // "low", "normal" or "critical".
+    urgency: string,
+    actions: [NotificationAction],
+    // When it arrived, formatted like the clock ("18:22").
+    time: string,
+}
+
+// The notification daemon (org.freedesktop.Notifications). Unavailable when another daemon
+// (mako, dunst, swaync …) is running.
+export global Notifications {
+    in property <bool> available;
+    // Notifications to show as pop-ups now; they leave this list when they expire.
+    in property <[NotificationInfo]> popups;
+    // Every notification not dismissed yet, newest first.
+    in property <[NotificationInfo]> history;
+    in property <int> count;
+    // Only critical notifications pop up while set.
+    in-out property <bool> do-not-disturb;
+    // How long pop-ups stay when the application does not say.
+    in-out property <duration> default-timeout: 5s;
+
+    // Removes a notification (the user closed it).
+    callback dismiss(id: int);
+    callback dismiss-all();
+    // Runs one of its actions ("default" for clicking the notification itself).
+    callback invoke(id: int, action-key: string);
+}

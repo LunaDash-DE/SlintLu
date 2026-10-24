@@ -1,0 +1,17 @@
+// Network status from NetworkManager.
+export global Network {
+    in property <bool> available;
+    // Connected with internet access.
+    in property <bool> online;
+    // Connected to some network.
+    in property <bool> connected;
+    // "wifi", "ethernet", "vpn", "other" or "none".
+    in property <string> kind;
+    // Connection name or Wi-Fi network name.
+    in property <string> name;
+    // Wi-Fi signal strength in 0..1.
+    in property <float> strength;
+    in property <bool> wifi-enabled;
+
+    callback set-wifi-enabled(enabled: bool);
+}

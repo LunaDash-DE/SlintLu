@@ -14,6 +14,11 @@ const FILES: &[(&str, &str)] = &[
     ("services/system.slint", include_str!("../ui/services/system.slint")),
     ("services/audio.slint", include_str!("../ui/services/audio.slint")),
     ("services/workspaces.slint", include_str!("../ui/services/workspaces.slint")),
+    ("services/notifications.slint", include_str!("../ui/services/notifications.slint")),
+    ("services/media.slint", include_str!("../ui/services/media.slint")),
+    ("services/network.slint", include_str!("../ui/services/network.slint")),
+    ("services/power.slint", include_str!("../ui/services/power.slint")),
+    ("services/theme.slint", include_str!("../ui/services/theme.slint")),
 ];
 
 /// The library name used in imports: `import { PanelWindow } from "@slintlu";`.

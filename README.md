@@ -81,6 +81,7 @@ src/
 ├── window/       the Slint window adapter: lifecycle and frame pacing
 ├── compositors/  compositor detection; niri, Hyprland and Sway IPC
 ├── ipc/          the shell's control socket: protocol and client
+├── dbus/         notification daemon, MPRIS, NetworkManager, logind, desktop portal
 ├── audio/        volume and devices (PipeWire / PulseAudio via pactl)
 ├── system/       CPU, memory, disks, temperatures, batteries, network, host
 ├── time/         clock formatting
@@ -99,7 +100,7 @@ scripts/          headless sway integration test
 - [x] Runtime: interpreter, per-screen panels, hot reload, CLI
 - [x] Services: clock, system stats, battery, network traffic, audio, workspaces and windows (niri / Hyprland / Sway)
 - [x] IPC: control a running shell (`slintlu msg …`) from keybindings and scripts — see [docs/IPC.md](docs/IPC.md)
-- [ ] D-Bus: notifications daemon, MPRIS, NetworkManager, power (logind), dark mode (portal)
+- [x] D-Bus: notification daemon, media players (MPRIS), NetworkManager, power (logind), dark mode and accent colour (portal)
 - [ ] i18n, application launcher, clipboard, lock screen (ext-session-lock + PAM), idle, theming
 
 ## Development

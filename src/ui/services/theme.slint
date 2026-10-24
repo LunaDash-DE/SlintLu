@@ -1,0 +1,10 @@
+// Desktop appearance preferences from the XDG desktop portal.
+export global Theme {
+    // The user prefers dark (true) or light (false); defaults to dark.
+    in property <bool> dark: true;
+    // Whether the desktop states a preference at all.
+    in property <bool> has-preference;
+    // The desktop's accent colour, or the default.
+    in property <color> accent: #89b4fa;
+    in property <bool> high-contrast;
+}

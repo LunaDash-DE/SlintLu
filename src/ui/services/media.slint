@@ -1,0 +1,32 @@
+export struct MediaPlayerInfo {
+    bus-name: string,
+    identity: string,
+    title: string,
+    artist: string,
+    album: string,
+    // file:// or https:// URL of the cover art.
+    art-url: string,
+    playing: bool,
+    paused: bool,
+    // Seconds.
+    position: float,
+    length: float,
+    can-go-next: bool,
+    can-go-previous: bool,
+}
+
+// Media players (MPRIS): Spotify, browsers, mpv, …
+export global Media {
+    in property <bool> available;
+    // The player to show: the playing one, else a paused one.
+    in property <MediaPlayerInfo> player;
+    in property <[MediaPlayerInfo]> players;
+
+    // Act on `player`.
+    callback play-pause();
+    callback next();
+    callback previous();
+    callback seek(seconds: int);
+    // Act on a specific player: command is "play-pause", "next" or "previous".
+    callback command(bus-name: string, command: string);
+}

@@ -3,8 +3,13 @@
 
 mod audio;
 mod clock;
+mod media;
+mod network;
+mod notifications;
+mod power;
 mod shell;
 mod system;
+mod theme;
 mod worker;
 mod workspaces;
 
@@ -24,6 +29,16 @@ pub fn install(host: &Rc<ShellHost>, info: &ShellInfo) {
     system::install(host);
     audio::install(host);
     workspaces::install(host, info.compositor);
+    notifications::install(host);
+    media::install(host);
+    network::install(host);
+    power::install(host);
+    theme::install(host);
+}
+
+/// Releases state that must not outlive the event loop.
+pub fn shutdown() {
+    notifications::shutdown();
 }
 
 /// Fills per-window values (such as the formatted time) right after windows are created.

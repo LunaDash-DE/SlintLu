@@ -1,4 +1,4 @@
-import { PanelWindow, Shell, Clock, System, Battery, Audio, Workspaces } from "@slintlu";
+import { PanelWindow, Shell, Clock, System, Battery, Audio, Workspaces, Media, Network, Notifications } from "@slintlu";
 
 component Chip inherits Rectangle {
     in property <string> text;
@@ -70,6 +70,13 @@ export component Bar inherits PanelWindow {
             overflow: elide;
         }
 
+        Chip {
+            visible: Media.player.title != "";
+            text: (Media.player.playing ? "▶ " : "⏸ ") + Media.player.title;
+            accent: #f5c2e7;
+            clicked => { Media.play-pause(); }
+        }
+
         Chip { text: Clock.date + "  " + Clock.time; accent: #f9e2af; }
 
         HorizontalLayout {
@@ -93,6 +100,17 @@ export component Bar inherits PanelWindow {
                 visible: Battery.available;
                 text: (Battery.charging ? "chg " : "bat ") + round(Battery.level * 100) + "%";
                 accent: Battery.level < 0.2 && !Battery.charging ? #f38ba8 : #a6e3a1;
+            }
+            Chip {
+                visible: Network.available;
+                text: !Network.connected ? "offline" : Network.kind == "wifi" ? Network.name + " " + round(Network.strength * 100) + "%" : Network.kind;
+                accent: Network.online ? #a6e3a1 : #fab387;
+            }
+            Chip {
+                visible: Notifications.available;
+                text: Notifications.do-not-disturb ? "dnd" : "notif " + Notifications.count;
+                accent: #f9e2af;
+                clicked => { Notifications.do-not-disturb = !Notifications.do-not-disturb; }
             }
             Chip { visible: Workspaces.keyboard-layout != ""; text: Workspaces.keyboard-layout; accent: #b4befe; }
             Chip { text: "apps"; accent: #cba6f7; clicked => { Shell.exec("fuzzel || wofi --show drun"); } }

@@ -9,6 +9,13 @@
 # Needs: sway, grim, python3.
 set -euo pipefail
 
+# Run on a private session bus so the notification daemon can be tested without touching the
+# user's own (and so CI, which has no session bus, gets one).
+if [[ -z "${SLINTLU_PRIVATE_BUS:-}" ]] && command -v dbus-run-session >/dev/null; then
+    export SLINTLU_PRIVATE_BUS=1
+    exec dbus-run-session -- "$0" "$@"
+fi
+
 renderer="${1:-software}"
 shift || true
 if [[ "${1:-}" == "--" ]]; then shift; fi
@@ -82,6 +89,14 @@ if [[ "$(basename "${cmd[0]}")" == slintlu ]]; then
         echo "sway workspaces were not picked up" >&2; exit 1
     fi
     "${cmd[0]}" msg get Workspaces.all
+    if [[ "$("${cmd[0]}" msg get Notifications.available)" == true ]] && command -v notify-send >/dev/null; then
+        notify-send -a headless-test "Hello" "from CI"
+        sleep 0.5
+        count="$("${cmd[0]}" msg get Notifications.count)"
+        echo "Notifications.count = $count"
+        [[ "$count" == 1 ]] || { echo "the notification did not arrive" >&2; exit 1; }
+        "${cmd[0]}" msg call Notifications.dismiss-all
+    fi
     actual="$("${cmd[0]}" msg get Shell.renderer)"
     echo "Shell.renderer = $actual"
     if [[ "$renderer" != auto && "$actual" != "$renderer" ]]; then

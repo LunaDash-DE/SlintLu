@@ -42,6 +42,7 @@
 pub mod audio;
 pub mod compositors;
 mod core;
+pub mod dbus;
 mod input;
 pub mod ipc;
 mod output;

@@ -47,6 +47,7 @@ pub fn with<R>(f: impl FnOnce(&Rc<ShellHost>) -> R) -> Option<R> {
 /// Drops all windows and the host while the rest of the thread's state (renderer caches) is
 /// still alive. Call after the event loop has returned.
 pub fn shutdown() {
+    super::globals::shutdown();
     if let Some(host) = HOST.with(|h| h.borrow_mut().take()) {
         host.entries.borrow_mut().clear();
     }
