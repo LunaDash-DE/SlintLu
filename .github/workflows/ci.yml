@@ -1,0 +1,132 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  RUST_BACKTRACE: 1
+  # Libraries Slint and smithay-client-toolkit link against.
+  BUILD_PACKAGES: pkg-config libwayland-dev libxkbcommon-dev libfontconfig-dev
+
+jobs:
+  fmt:
+    name: Format
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - uses: extractions/setup-just@v3
+      - run: just fmt-check
+
+  typos:
+    name: Spelling
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: crate-ci/typos@v1
+
+  deny:
+    name: Licences & advisories
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check
+          arguments: --all-features
+
+  lint:
+    name: Clippy & docs
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          packages: ${{ env.BUILD_PACKAGES }}
+          version: build-1
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: extractions/setup-just@v3
+      # Dependency cache: ~/.cargo registry/git + compiled dependencies in target/.
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: lint
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - run: just lint
+      - run: just doc
+
+  test:
+    name: Test (${{ matrix.toolchain }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        # `1.92` is the minimum supported Rust version declared in Cargo.toml.
+        toolchain: [stable, "1.92"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          packages: ${{ env.BUILD_PACKAGES }}
+          version: build-1
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.toolchain }}
+      - uses: extractions/setup-just@v3
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: test-${{ matrix.toolchain }}
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - run: just test
+      - name: Build without GPU renderers
+        run: cargo build --all-targets --no-default-features
+
+  headless:
+    name: Headless sway (${{ matrix.renderer }})
+    runs-on: ubuntu-24.04
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        renderer: [software, opengl, vulkan]
+    # Software rendering must always work; GPU paths run on Mesa's llvmpipe / lavapipe and
+    # are informative only.
+    continue-on-error: ${{ matrix.renderer != 'software' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          packages: ${{ env.BUILD_PACKAGES }} sway grim fonts-dejavu-core libegl1 libgles2 libegl-mesa0 mesa-vulkan-drivers libvulkan1
+          version: headless-1
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: extractions/setup-just@v3
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: test-stable
+          save-if: false
+      - name: Render in headless sway
+        env:
+          LIBGL_ALWAYS_SOFTWARE: "1"
+          SCREENSHOT: ${{ runner.temp }}/shot-${{ matrix.renderer }}.ppm
+        run: just headless ${{ matrix.renderer }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshot-${{ matrix.renderer }}
+          path: ${{ runner.temp }}/shot-${{ matrix.renderer }}.ppm
+          if-no-files-found: ignore

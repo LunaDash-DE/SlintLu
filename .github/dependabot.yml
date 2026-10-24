@@ -1,0 +1,15 @@
+version: 2
+updates:
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      slint:
+        patterns: ["slint*", "i-slint-*"]
+      wayland:
+        patterns: ["wayland-*", "smithay-*"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
