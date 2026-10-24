@@ -2,7 +2,8 @@
 
 use std::rc::{Rc, Weak};
 
-use slint::platform::WindowEvent;
+use slint::SharedString;
+use slint::platform::{Key, WindowEvent};
 use smithay_client_toolkit::reexports::client::protocol::{wl_keyboard, wl_surface};
 use smithay_client_toolkit::reexports::client::{Connection, QueueHandle};
 use smithay_client_toolkit::seat::keyboard::{
@@ -12,6 +13,35 @@ use smithay_client_toolkit::seat::keyboard::{
 use super::keys::key_text;
 use crate::core::state::State;
 use crate::window::WaylandWindow;
+
+/// Modifier state as Slint last saw it (Slint derives modifiers from modifier key events).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(crate) struct ModifierKeys {
+    pub shift: bool,
+    pub ctrl: bool,
+    pub alt: bool,
+    pub logo: bool,
+}
+
+impl ModifierKeys {
+    fn from_xkb(m: &Modifiers) -> Self {
+        Self { shift: m.shift, ctrl: m.ctrl, alt: m.alt, logo: m.logo }
+    }
+
+    /// Updates the state from a key Slint is about to receive.
+    fn track(&mut self, text: &str, pressed: bool) {
+        let is = |keys: [Key; 2]| keys.into_iter().any(|k| SharedString::from(k) == text);
+        if is([Key::Shift, Key::ShiftR]) {
+            self.shift = pressed;
+        } else if is([Key::Control, Key::ControlR]) {
+            self.ctrl = pressed;
+        } else if is([Key::Alt, Key::AltGr]) {
+            self.alt = pressed;
+        } else if is([Key::Meta, Key::MetaR]) {
+            self.logo = pressed;
+        }
+    }
+}
 
 pub(crate) enum KeyKind {
     Press,
@@ -31,6 +61,10 @@ impl State {
         };
         let Some(text) = key_text(&event) else { return };
         log::trace!("key {:?} -> {text:?}", event.keysym);
+        match kind {
+            KeyKind::Press | KeyKind::Repeat => self.modifier_keys.track(&text, true),
+            KeyKind::Release => self.modifier_keys.track(&text, false),
+        }
         window.dispatch(match kind {
             KeyKind::Press => WindowEvent::KeyPressed { text },
             KeyKind::Repeat => WindowEvent::KeyPressRepeated { text },
@@ -72,6 +106,7 @@ impl KeyboardHandler for State {
         if let Some(window) = self.keyboard_focus.take().and_then(|w| w.upgrade()) {
             window.dispatch(WindowEvent::WindowActiveChanged(false));
         }
+        self.modifier_keys = ModifierKeys::default();
     }
 
     fn press_key(
@@ -79,9 +114,10 @@ impl KeyboardHandler for State {
         _: &Connection,
         _: &QueueHandle<Self>,
         _: &wl_keyboard::WlKeyboard,
-        _: u32,
+        serial: u32,
         event: KeyEvent,
     ) {
+        self.ctx.clipboard.last_serial.set(serial);
         self.key_event(event, KeyKind::Press);
     }
 
@@ -113,10 +149,31 @@ impl KeyboardHandler for State {
         _: &QueueHandle<Self>,
         _: &wl_keyboard::WlKeyboard,
         _: u32,
-        _: Modifiers,
+        modifiers: Modifiers,
         _: RawModifiers,
         _: u32,
     ) {
-        // Slint derives the modifier state from the modifier key events themselves.
+        // Physical keyboards also send the modifier keys themselves, but virtual keyboards
+        // (on-screen keyboards, remote desktops, automation) may only change the state.
+        // Synthesize the key events Slint needs for anything it has not seen.
+        let Some(window) = self.focused_window() else { return };
+        let wanted = ModifierKeys::from_xkb(&modifiers);
+        let seen = self.modifier_keys;
+        for (now, before, key) in [
+            (wanted.shift, seen.shift, Key::Shift),
+            (wanted.ctrl, seen.ctrl, Key::Control),
+            (wanted.alt, seen.alt, Key::Alt),
+            (wanted.logo, seen.logo, Key::Meta),
+        ] {
+            if now != before {
+                let text: SharedString = key.into();
+                window.dispatch(if now {
+                    WindowEvent::KeyPressed { text }
+                } else {
+                    WindowEvent::KeyReleased { text }
+                });
+            }
+        }
+        self.modifier_keys = wanted;
     }
 }

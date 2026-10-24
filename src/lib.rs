@@ -40,6 +40,7 @@
 //! [smithay-client-toolkit]: https://docs.rs/smithay-client-toolkit
 
 pub mod audio;
+mod clipboard;
 pub mod compositors;
 mod core;
 pub mod dbus;

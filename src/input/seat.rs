@@ -38,7 +38,9 @@ impl SeatHandler for State {
         &mut self.seat_state
     }
 
-    fn new_seat(&mut self, _: &Connection, _: &QueueHandle<Self>, _: wl_seat::WlSeat) {}
+    fn new_seat(&mut self, _: &Connection, qh: &QueueHandle<Self>, seat: wl_seat::WlSeat) {
+        self.ctx.clipboard.add_seat(&seat, qh);
+    }
 
     fn new_capability(
         &mut self,
@@ -47,6 +49,8 @@ impl SeatHandler for State {
         seat: wl_seat::WlSeat,
         capability: Capability,
     ) {
+        // Seats announced in the initial burst may not have gone through `new_seat` yet.
+        self.ctx.clipboard.add_seat(&seat, qh);
         if capability == Capability::Keyboard && self.devices.keyboard.is_none() {
             let repeat =
                 Box::new(|state: &mut State, _: &wl_keyboard::WlKeyboard, event: KeyEvent| {

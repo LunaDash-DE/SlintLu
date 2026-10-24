@@ -64,7 +64,8 @@ impl PointerHandler for State {
                 }
                 PointerEventKind::Leave { .. } => WindowEvent::PointerExited,
                 PointerEventKind::Motion { .. } => WindowEvent::PointerMoved { position },
-                PointerEventKind::Press { button, .. } => {
+                PointerEventKind::Press { button, serial, .. } => {
+                    self.ctx.clipboard.last_serial.set(serial);
                     WindowEvent::PointerPressed { position, button: pointer_button(button) }
                 }
                 PointerEventKind::Release { button, .. } => {

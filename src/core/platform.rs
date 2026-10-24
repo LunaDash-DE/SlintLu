@@ -70,6 +70,7 @@ impl WaylandPlatform {
             layer_shell,
             xdg_shell,
             shm,
+            clipboard: crate::clipboard::ClipboardState::new(&globals, &qh),
             renderer: config.renderer,
             windows: Default::default(),
             outputs: Default::default(),
@@ -164,6 +165,15 @@ impl Platform for WaylandPlatform {
         *self.state.borrow_mut() = Some(state);
         self.ctx.release_graphics();
         result
+    }
+
+    fn set_clipboard_text(&self, text: &str, clipboard: slint::platform::Clipboard) {
+        self.ctx.clipboard.set_text(text, clipboard, &self.ctx.qh);
+        let _ = self.ctx.conn.flush();
+    }
+
+    fn clipboard_text(&self, clipboard: slint::platform::Clipboard) -> Option<String> {
+        self.ctx.clipboard.text(clipboard, &self.ctx.conn)
     }
 
     fn new_event_loop_proxy(&self) -> Option<Box<dyn EventLoopProxy>> {

@@ -26,6 +26,7 @@ pub(crate) struct State {
     shm: Shm,
     pub devices: SeatDevices,
     pub keyboard_focus: Option<Weak<WaylandWindow>>,
+    pub modifier_keys: crate::input::ModifierKeys,
     pub quit: bool,
 }
 
@@ -45,6 +46,7 @@ impl State {
             ctx,
             loop_handle,
             keyboard_focus: None,
+            modifier_keys: Default::default(),
             quit: false,
         }
     }

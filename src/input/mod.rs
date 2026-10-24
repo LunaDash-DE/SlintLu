@@ -5,4 +5,5 @@ pub(crate) mod keys;
 mod pointer;
 mod seat;
 
+pub(crate) use keyboard::ModifierKeys;
 pub(crate) use seat::SeatDevices;

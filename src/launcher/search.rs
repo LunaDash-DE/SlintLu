@@ -38,7 +38,20 @@ fn score_text(query: &str, text: &str) -> Option<u32> {
     Some(300u32.saturating_sub(gaps * 5).max(10))
 }
 
+/// Every word of the query must match somewhere; their scores add up.
 fn score(app: &AppEntry, query: &str) -> Option<u32> {
+    let words: Vec<&str> = query.split_whitespace().collect();
+    if words.len() <= 1 {
+        return score_word(app, query);
+    }
+    words
+        .iter()
+        .map(|w| score_word(app, w))
+        .sum::<Option<u32>>()
+        .map(|total| total / words.len() as u32)
+}
+
+fn score_word(app: &AppEntry, query: &str) -> Option<u32> {
     let name = score_text(query, &app.name).map(|s| s + 100);
     let others = [&app.generic_name, &app.id, &app.comment]
         .into_iter()
@@ -111,6 +124,9 @@ mod tests {
         );
         assert_eq!(names(search(&apps, "ffx", &history, 10)), vec!["Firefox"]);
         assert!(search(&apps, "zzz", &history, 10).is_empty());
+        // Several words: all must match (name and description here).
+        assert_eq!(names(search(&apps, "foot term", &history, 10)), vec!["Foot"]);
+        assert!(search(&apps, "foot browser", &history, 10).is_empty());
     }
 
     #[test]

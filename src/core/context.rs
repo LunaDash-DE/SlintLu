@@ -29,6 +29,7 @@ pub(crate) struct Context {
     pub layer_shell: Option<LayerShell>,
     pub xdg_shell: Option<XdgShell>,
     pub shm: Shm,
+    pub clipboard: crate::clipboard::ClipboardState,
     pub renderer: RendererKind,
     pub windows: RefCell<Vec<Weak<WaylandWindow>>>,
     pub outputs: RefCell<Vec<(OutputInfo, WlOutput)>>,
