@@ -97,6 +97,24 @@ jobs:
       - name: Build without GPU renderers
         run: cargo build --all-targets --no-default-features
 
+  nix:
+    name: Nix flake
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: DeterminateSystems/nix-installer-action@main
+      # Caches the Nix store between runs.
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - name: Check the flake
+        run: nix flake check -L --show-trace
+      - name: Build and smoke-test the package
+        run: |
+          nix build -L .#slintlu
+          ./result/bin/slintlu --version
+          ./result/bin/slintlu check examples/starter
+      - name: Evaluate the development shell
+        run: nix develop -c just --version
+
   headless:
     name: Headless sway (${{ matrix.renderer }})
     runs-on: ubuntu-24.04

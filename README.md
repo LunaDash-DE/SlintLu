@@ -41,6 +41,26 @@ slintlu init        # writes a starter bar, launcher, lock screen and tray menu 
 slintlu             # runs it; edit the files and watch them reload
 ```
 
+With Nix:
+
+```bash
+nix run github:LunaDash-DE/SlintLu -- init
+nix run github:LunaDash-DE/SlintLu
+```
+
+or in Home Manager (`inputs.slintlu.url = "github:LunaDash-DE/SlintLu";`):
+
+```nix
+imports = [ inputs.slintlu.homeManagerModules.default ];
+programs.slintlu = {
+  enable = true;
+  configDir = ./shell;          # linked to ~/.config/slintlu
+  theme.dark = "tokyo-night";   # written to theme.json
+};
+```
+
+`nix develop` provides the toolchain plus sway, grim and wtype for the headless tests.
+
 A minimal panel:
 
 ```slint
@@ -109,7 +129,8 @@ src/
 ├── config/       configuration paths and hot reload                      (runtime)
 └── cli/          the `slintlu` command line                              (runtime)
 examples/         starter configuration and Rust examples
-scripts/          headless sway integration test
+scripts/          headless sway integration test, API docs generator
+nix/              Nix package and Home Manager module (see flake.nix)
 ```
 
 ## Roadmap
