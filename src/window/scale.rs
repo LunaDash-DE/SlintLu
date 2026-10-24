@@ -81,7 +81,7 @@ impl Dispatch2<WpFractionalScaleV1, State> for FractionalScaleData {
         if let wp_fractional_scale_v1::Event::PreferredScale { scale } = event
             && let Some(window) = state.ctx.find_window(&self.surface)
         {
-            // The scale is sent in 120ths.
+            // The scale is sent as a multiple of 1/120.
             window.set_fractional_scale(scale as f32 / 120.0);
         }
     }
