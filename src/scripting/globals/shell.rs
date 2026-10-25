@@ -57,16 +57,11 @@ pub fn install(host: &Rc<ShellHost>, info: &ShellInfo) {
     );
 }
 
-/// Runs `command` through `sh -c` in its own process group, so it survives the shell.
+/// Runs `command` through `sh -c` in its own session, so it survives the shell.
 pub fn spawn_detached(command: &str) {
-    use std::os::unix::process::CommandExt;
-    let child = Command::new("sh")
-        .arg("-c")
-        .arg(command)
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .process_group(0)
-        .spawn();
+    let mut command_line = Command::new("sh");
+    command_line.arg("-c").arg(command).stdin(Stdio::null()).stdout(Stdio::null());
+    let child = slintlu::launcher::detach(&mut command_line).spawn();
     match child {
         // Reap the child in the background so it never becomes a zombie.
         Ok(mut child) => {

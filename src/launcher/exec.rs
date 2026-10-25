@@ -107,6 +107,24 @@ fn terminal() -> Vec<String> {
 }
 
 /// Starts the application (or one of its actions) detached from the shell.
+/// Starts `command` in a new session, without a controlling terminal.
+///
+/// A display manager may start the desktop on a VT, which then becomes the controlling
+/// terminal of everything launched from it. An interactive shell started by such a program
+/// (Electron applications read the login shell's environment this way) is stopped by SIGTTIN
+/// when it is not in the terminal's foreground process group, and the program hangs.
+pub fn detach(command: &mut Command) -> &mut Command {
+    // SAFETY: setsid is async-signal-safe and touches no memory of the parent.
+    unsafe {
+        command.pre_exec(|| {
+            if libc::setsid() < 0 {
+                return Err(std::io::Error::last_os_error());
+            }
+            Ok(())
+        })
+    }
+}
+
 pub fn launch(app: &AppEntry, action: Option<&str>) -> Result<(), LaunchError> {
     let exec = action
         .and_then(|id| app.actions.iter().find(|a| a.id == id))
@@ -121,12 +139,8 @@ pub fn launch(app: &AppEntry, action: Option<&str>) -> Result<(), LaunchError> {
         argv = wrapped;
     }
     let mut command = Command::new(&argv[0]);
-    command
-        .args(&argv[1..])
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .process_group(0);
+    command.args(&argv[1..]).stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null());
+    detach(&mut command);
     if let Some(home) = std::env::var_os("HOME") {
         command.current_dir(home);
     }
