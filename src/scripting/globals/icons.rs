@@ -26,25 +26,43 @@ thread_local! {
     static IMAGES: RefCell<HashMap<PathBuf, Image>> = RefCell::default();
 }
 
-/// Whether Slint can decode the file, judging by its extension.
-fn decodable(path: &Path) -> bool {
-    path.extension().and_then(|e| e.to_str()).is_some_and(|e| {
-        matches!(e.to_ascii_lowercase().as_str(), "png" | "jpg" | "jpeg" | "svg" | "svgz")
-    })
+fn extension(path: &Path) -> String {
+    path.extension().and_then(|e| e.to_str()).unwrap_or_default().to_ascii_lowercase()
+}
+
+/// Whether Slint's own loader decodes the file, judging by its extension.
+fn slint_decodable(path: &Path) -> bool {
+    matches!(extension(path).as_str(), "png" | "jpg" | "jpeg" | "svg" | "svgz")
+}
+
+/// Decodes the formats Slint does not (WebP, BMP, GIF) with the `image` crate.
+fn decode_other(path: &Path) -> Option<Image> {
+    if !slintlu::files::IMAGE_EXTENSIONS.contains(&extension(path).as_str()) {
+        return None;
+    }
+    let rgba = slintlu::files::decode(path).map_err(|e| log::debug!("{e}")).ok()?;
+    let buffer = slint::SharedPixelBuffer::<slint::Rgba8Pixel>::clone_from_slice(
+        rgba.as_raw(),
+        rgba.width(),
+        rgba.height(),
+    );
+    Some(Image::from_rgba8(buffer))
 }
 
 /// Loads (once) the image at `path`; an empty image when it cannot be decoded.
 pub fn image_at(path: &Path) -> Image {
-    if !decodable(path) {
-        return Image::default();
-    }
     IMAGES.with(|cache| {
         cache
             .borrow_mut()
             .entry(path.to_path_buf())
             .or_insert_with(|| {
-                Image::load_from_path(path).unwrap_or_else(|_| {
-                    log::debug!("cannot decode icon {}", path.display());
+                let image = if slint_decodable(path) {
+                    Image::load_from_path(path).ok()
+                } else {
+                    decode_other(path)
+                };
+                image.unwrap_or_else(|| {
+                    log::debug!("cannot decode image {}", path.display());
                     Image::default()
                 })
             })

@@ -173,6 +173,7 @@ impl Backend for Hyprland {
             Action::FocusWorkspace(id) => format!("dispatch workspace {id}"),
             Action::FocusWindow(id) => format!("dispatch focuswindow address:0x{id:x}"),
             Action::CloseWindow(id) => format!("dispatch closewindow address:0x{id:x}"),
+            other => return Err(super::unsupported(other)),
         };
         let reply = self.request(&command)?;
         if reply.trim() == "ok" {

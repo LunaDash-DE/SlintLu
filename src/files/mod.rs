@@ -14,6 +14,77 @@ pub struct FileEntry {
     pub is_dir: bool,
 }
 
+/// Extensions of images [`decode`] and [`thumbnail`] read.
+pub const IMAGE_EXTENSIONS: &[&str] = &["png", "jpg", "jpeg", "webp", "bmp", "gif"];
+/// Extensions of videos [`thumbnail`] reads (through ffmpeg).
+pub const VIDEO_EXTENSIONS: &[&str] = &["mp4", "webm", "mkv", "mov", "m4v"];
+
+/// What a path is, judging by the file system and its extension.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum FileKind {
+    Missing,
+    Directory,
+    Image,
+    Video,
+    Other,
+}
+
+impl FileKind {
+    pub fn of(path: &Path) -> Self {
+        if path.is_dir() {
+            return Self::Directory;
+        }
+        if !path.exists() {
+            return Self::Missing;
+        }
+        let extension =
+            path.extension().and_then(|e| e.to_str()).unwrap_or_default().to_ascii_lowercase();
+        if IMAGE_EXTENSIONS.contains(&extension.as_str()) {
+            Self::Image
+        } else if VIDEO_EXTENSIONS.contains(&extension.as_str()) {
+            Self::Video
+        } else {
+            Self::Other
+        }
+    }
+
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Missing => "",
+            Self::Directory => "directory",
+            Self::Image => "image",
+            Self::Video => "video",
+            Self::Other => "file",
+        }
+    }
+}
+
+/// An XDG user directory ("pictures", "videos", "downloads", "documents", "music", "desktop")
+/// from `user-dirs.dirs`, or the home directory for "home". `None` when it is not configured
+/// or does not exist.
+pub fn user_dir(name: &str) -> Option<PathBuf> {
+    let home = xdg::home_dir();
+    if name.eq_ignore_ascii_case("home") {
+        return Some(home);
+    }
+    let key = format!("XDG_{}_DIR", name.to_ascii_uppercase());
+    let text = std::fs::read_to_string(xdg::config_home().join("user-dirs.dirs")).ok()?;
+    let value = text.lines().find_map(|line| {
+        let (k, v) = line.trim().split_once('=')?;
+        (k == key).then(|| v.trim().trim_matches('"').to_owned())
+    })?;
+    let path = match value.strip_prefix("$HOME") {
+        Some(rest) => home.join(rest.trim_start_matches('/')),
+        None => PathBuf::from(value),
+    };
+    (path.is_dir() && path != home).then_some(path)
+}
+
+/// Decodes an image of any [`IMAGE_EXTENSIONS`] format. Blocking.
+pub fn decode(path: &Path) -> Result<image::RgbaImage, String> {
+    image::open(path).map(|i| i.into_rgba8()).map_err(|e| format!("{}: {e}", path.display()))
+}
+
 /// Expands a leading `~` to the home directory; `file://` URIs become paths.
 pub fn expand_home(path: &str) -> PathBuf {
     if let Some(path) = crate::util::uri::file_uri_path(path) {
@@ -88,16 +159,45 @@ fn thumbnail_in(cache: &Path, path: &Path, size: u32) -> Result<PathBuf, String>
     if target.is_file() {
         return Ok(target);
     }
-    let image = image::open(path).map_err(|e| format!("{}: {e}", path.display()))?;
-    let thumb = image.thumbnail(size, size);
     if let Some(dir) = target.parent() {
         std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
     }
     // Written next to the target and renamed, so readers never see a half-written file.
-    let partial = target.with_extension(format!("{}.part", std::process::id()));
-    thumb.save_with_format(&partial, image::ImageFormat::Png).map_err(|e| e.to_string())?;
+    let partial = target.with_extension(format!("{}.part.png", std::process::id()));
+    if FileKind::of(path) == FileKind::Video {
+        video_frame(path, size, &partial)?;
+    } else {
+        let image = image::open(path).map_err(|e| format!("{}: {e}", path.display()))?;
+        let thumb = image.thumbnail(size, size);
+        thumb.save_with_format(&partial, image::ImageFormat::Png).map_err(|e| e.to_string())?;
+    }
     std::fs::rename(&partial, &target).map_err(|e| e.to_string())?;
     Ok(target)
+}
+
+/// Writes a frame of a video, scaled to fit `size`, as PNG with ffmpeg.
+fn video_frame(path: &Path, size: u32, target: &Path) -> Result<(), String> {
+    let scale = format!("scale={size}:{size}:force_original_aspect_ratio=decrease");
+    // One second in skips black intros; very short clips fall back to the first frame.
+    for seek in [&["-ss", "1"][..], &[]] {
+        let status = std::process::Command::new("ffmpeg")
+            .args(["-nostdin", "-v", "error", "-y"])
+            .args(seek)
+            .arg("-i")
+            .arg(path)
+            .args(["-frames:v", "1", "-vf", &scale, "-f", "image2", "-c:v", "png"])
+            .arg(target)
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .status()
+            .map_err(|e| format!("ffmpeg (needed for video thumbnails): {e}"))?;
+        if status.success() && target.metadata().is_ok_and(|m| m.len() > 0) {
+            return Ok(());
+        }
+    }
+    let _ = std::fs::remove_file(target);
+    Err(format!("{}: ffmpeg could not read a frame", path.display()))
 }
 
 #[cfg(test)]

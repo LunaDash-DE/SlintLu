@@ -19,6 +19,7 @@ const RUNTIME_GLOBALS: &[&str] = &[
     "Battery",
     "Audio",
     "Workspaces",
+    "Switcher",
     "Notifications",
     "Media",
     "Network",

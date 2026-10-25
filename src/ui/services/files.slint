@@ -10,12 +10,27 @@ export global Files {
     in property <string> home;
     // Increases when thumbnails finish; pass it to `thumbnail` to show them as they appear.
     in property <int> revision;
+    // The path picked in the dialog `choose` opened; read it when `chosen-serial` changes.
+    in property <string> chosen;
+    // Increases when the user picks something in a dialog opened by `choose`.
+    in property <int> chosen-serial;
     // Entries of a directory, directories first. `extensions` filters files: "png,jpg,webp".
     pure callback list(dir: string, extensions: string) -> [FileEntry];
     pure callback exists(path: string) -> bool;
+    // "directory", "image" (png, jpg, jpeg, webp, bmp, gif), "video" (mp4, webm, mkv, mov,
+    // m4v), "file", or "" when the path does not exist.
+    pure callback kind(path: string) -> string;
+    // The folder containing a path ("" for the root).
+    pure callback parent(path: string) -> string;
+    // An XDG user folder: "home", "pictures", "videos", "downloads", "documents", "music" or
+    // "desktop"; "" when it is not set up.
+    pure callback user-dir(name: string) -> string;
+    // Opens the desktop's file chooser (XDG portal) to pick a file, or a folder when
+    // `directory` is true. `extensions` filters files ("png,jpg"); `folder` is where it starts.
+    callback choose(title: string, extensions: string, directory: bool, folder: string);
     // The image at a path (full size; use `thumbnail` for grids).
     pure callback image(path: string) -> image;
     // A cached thumbnail of at most `size` pixels, generated in the background (empty until
-    // ready).
+    // ready). Videos need ffmpeg.
     pure callback thumbnail(path: string, size: int, revision: int) -> image;
 }

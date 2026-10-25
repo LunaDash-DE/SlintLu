@@ -14,6 +14,11 @@ export global Compositor {
     // The wallpaper image when the compositor manages one (LunaDash), as a local path; empty
     // otherwise. Shells can show it instead of their own wallpaper setting.
     in property <string> wallpaper;
+    // A still frame of a video wallpaper (LunaDash); empty for images.
+    in property <string> wallpaper-poster;
+    // Whether the compositor plays the (video) wallpaper itself below the shell's surfaces;
+    // shells should keep their wallpaper transparent then.
+    in property <bool> wallpaper-live;
     // The desktop language chosen in the compositor (LunaDash), e.g. "zh_TW"; empty otherwise.
     in property <string> language;
 

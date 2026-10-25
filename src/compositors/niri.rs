@@ -50,6 +50,7 @@ impl Backend for Niri {
             Action::FocusWorkspace(id) => json!({"FocusWorkspace": {"reference": {"Id": id}}}),
             Action::FocusWindow(id) => json!({"FocusWindow": {"id": id}}),
             Action::CloseWindow(id) => json!({"CloseWindow": {"id": id}}),
+            other => return Err(super::unsupported(other)),
         };
         let stream = self.request(&json!({ "Action": action }))?;
         let mut reply = String::new();

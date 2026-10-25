@@ -163,6 +163,7 @@ impl Backend for Sway {
             }
             Action::FocusWindow(id) => format!("[con_id={id}] focus"),
             Action::CloseWindow(id) => format!("[con_id={id}] kill"),
+            other => return Err(super::unsupported(other)),
         };
         let reply = self.query(RUN_COMMAND, &command)?;
         match reply.as_array().and_then(|r| r.first()) {

@@ -12,7 +12,9 @@ use std::sync::Arc;
 
 pub use detect::Compositor;
 pub use lunadash::LunaDash;
-pub use model::{Action, CompositorRequest, DesktopState, Window, Workspace};
+pub use model::{
+    Action, CompositorRequest, DesktopState, SwitcherItem, SwitcherState, Window, Workspace,
+};
 
 /// A compositor's IPC connection.
 pub trait Backend: Send + Sync {
@@ -26,6 +28,16 @@ pub trait Backend: Send + Sync {
         let _ = (method, value);
         Err(io::Error::new(io::ErrorKind::Unsupported, "this compositor has no command interface"))
     }
+    /// Blocks, calling `on_state` whenever the compositor's window switcher changes (LunaDash).
+    fn watch_switcher(&self, on_state: &mut dyn FnMut(&SwitcherState)) -> io::Result<()> {
+        let _ = on_state;
+        Err(io::Error::new(io::ErrorKind::Unsupported, "this compositor has no window switcher"))
+    }
+}
+
+/// The error for an action this compositor cannot perform.
+fn unsupported(action: &Action) -> io::Error {
+    io::Error::new(io::ErrorKind::Unsupported, format!("{action:?} is not supported here"))
 }
 
 /// The IPC backend for `compositor`, if it has one and its socket is advertised.

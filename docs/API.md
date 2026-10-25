@@ -175,6 +175,8 @@ The compositor itself: its name, requests it sends to the shell (keyboard shortc
 | `request-serial` | `int` | read |  |
 | `has-commands` | `bool` | read | Whether `command` is supported (LunaDash). |
 | `wallpaper` | `string` | read | The wallpaper image when the compositor manages one (LunaDash), as a local path; empty otherwise. Shells can show it instead of their own wallpaper setting. |
+| `wallpaper-poster` | `string` | read | A still frame of a video wallpaper (LunaDash); empty for images. |
+| `wallpaper-live` | `bool` | read | Whether the compositor plays the (video) wallpaper itself below the shell's surfaces; shells should keep their wallpaper transparent then. |
 | `language` | `string` | read | The desktop language chosen in the compositor (LunaDash), e.g. "zh_TW"; empty otherwise. |
 | `command(method: string, value: string)` | callback | call | A compositor-specific command, e.g. command("launch-default", "terminal") on LunaDash. |
 
@@ -186,10 +188,16 @@ Directories and images, e.g. for a wallpaper picker.
 |---|---|---|---|
 | `home` | `string` | read | The home directory; paths starting with "~" are expanded everywhere. |
 | `revision` | `int` | read | Increases when thumbnails finish; pass it to `thumbnail` to show them as they appear. |
+| `chosen` | `string` | read | The path picked in the dialog `choose` opened; read it when `chosen-serial` changes. |
+| `chosen-serial` | `int` | read | Increases when the user picks something in a dialog opened by `choose`. |
 | `list(dir: string, extensions: string)` | callback → `[FileEntry]` | call | Entries of a directory, directories first. `extensions` filters files: "png,jpg,webp". |
 | `exists(path: string)` | callback → `bool` | call |  |
+| `kind(path: string)` | callback → `string` | call | "directory", "image" (png, jpg, jpeg, webp, bmp, gif), "video" (mp4, webm, mkv, mov, m4v), "file", or "" when the path does not exist. |
+| `parent(path: string)` | callback → `string` | call | The folder containing a path ("" for the root). |
+| `user-dir(name: string)` | callback → `string` | call | An XDG user folder: "home", "pictures", "videos", "downloads", "documents", "music" or "desktop"; "" when it is not set up. |
+| `choose(title: string, extensions: string, directory: bool, folder: string)` | callback | call | Opens the desktop's file chooser (XDG portal) to pick a file, or a folder when `directory` is true. `extensions` filters files ("png,jpg"); `folder` is where it starts. |
 | `image(path: string)` | callback → `image` | call | The image at a path (full size; use `thumbnail` for grids). |
-| `thumbnail(path: string, size: int, revision: int)` | callback → `image` | call | A cached thumbnail of at most `size` pixels, generated in the background (empty until ready). |
+| `thumbnail(path: string, size: int, revision: int)` | callback → `image` | call | A cached thumbnail of at most `size` pixels, generated in the background (empty until ready). Videos need ffmpeg. |
 
 ### I18n
 
@@ -383,6 +391,22 @@ Settings that survive restarts, stored per shell in $XDG_STATE_HOME/slintlu. Rea
 | `list-add(key: string, value: string)` | callback | call | Appends a value (if missing) / removes every occurrence. |
 | `list-remove(key: string, value: string)` | callback | call |  |
 
+### Switcher
+
+The compositor's window switcher (Alt+Tab) and workspace switcher (Super+Tab), for shells that draw them. The compositor handles the keys; the shell shows `entries` while `active`.
+
+| Member | Type | Access | Description |
+|---|---|---|---|
+| `available` | `bool` | read | Whether the compositor has a switcher the shell can draw (LunaDash). |
+| `active` | `bool` | read |  |
+| `workspaces` | `bool` | read | Switching workspaces instead of windows. |
+| `index` | `int` | read | The selected entry. |
+| `entries` | `[SwitcherEntry]` | read |  |
+| `open(workspaces: bool)` | callback | call | Starts the switcher without a keyboard shortcut (e.g. from a panel button). |
+| `step(delta: int)` | callback | call | Moves the selection by this many entries. |
+| `choose(id: int)` | callback | call | Switches to an entry (by id) and closes the switcher. |
+| `cancel()` | callback | call | Closes the switcher without switching. |
+
 ### System
 
 Machine statistics, refreshed every two seconds.
@@ -456,7 +480,7 @@ The system tray (StatusNotifierItem): application icons with menus.
 
 ### Workspaces
 
-Workspaces and windows of niri, Hyprland or Sway.
+Workspaces and windows of niri, Hyprland, Sway or LunaDash.
 
 | Member | Type | Access | Description |
 |---|---|---|---|
@@ -630,6 +654,19 @@ A monitor.
 | `width` | `int` |  |  |
 | `height` | `int` |  |  |
 | `scale` | `int` |  |  |
+
+### SwitcherEntry
+
+| Member | Type | Access | Description |
+|---|---|---|---|
+| `id` | `int` |  | The window id, or the workspace id in the workspace switcher. |
+| `title` | `string` |  |  |
+| `app-id` | `string` |  |  |
+| `icon` | `image` |  |  |
+| `workspace` | `int` |  |  |
+| `focused` | `bool` |  |  |
+| `minimized` | `bool` |  |  |
+| `icons` | `[image]` |  | Workspace switcher: icons of the applications on the workspace. |
 
 ### Temperature
 

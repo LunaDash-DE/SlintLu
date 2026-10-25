@@ -22,7 +22,7 @@ export struct WindowInfo {
     urgent: bool,
 }
 
-// Workspaces and windows of niri, Hyprland or Sway.
+// Workspaces and windows of niri, Hyprland, Sway or LunaDash.
 export global Workspaces {
     in property <bool> available;
     in property <[WorkspaceInfo]> all;
@@ -35,4 +35,39 @@ export global Workspaces {
     callback focus(workspace-id: int);
     callback focus-window(window-id: string);
     callback close-window(window-id: string);
+}
+
+export struct SwitcherEntry {
+    // The window id, or the workspace id in the workspace switcher.
+    id: int,
+    title: string,
+    app-id: string,
+    icon: image,
+    workspace: int,
+    focused: bool,
+    minimized: bool,
+    // Workspace switcher: icons of the applications on the workspace.
+    icons: [image],
+}
+
+// The compositor's window switcher (Alt+Tab) and workspace switcher (Super+Tab), for shells that
+// draw them. The compositor handles the keys; the shell shows `entries` while `active`.
+export global Switcher {
+    // Whether the compositor has a switcher the shell can draw (LunaDash).
+    in property <bool> available;
+    in property <bool> active;
+    // Switching workspaces instead of windows.
+    in property <bool> workspaces;
+    // The selected entry.
+    in property <int> index;
+    in property <[SwitcherEntry]> entries;
+
+    // Starts the switcher without a keyboard shortcut (e.g. from a panel button).
+    callback open(workspaces: bool);
+    // Moves the selection by this many entries.
+    callback step(delta: int);
+    // Switches to an entry (by id) and closes the switcher.
+    callback choose(id: int);
+    // Closes the switcher without switching.
+    callback cancel();
 }

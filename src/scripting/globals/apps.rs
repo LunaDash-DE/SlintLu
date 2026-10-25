@@ -177,8 +177,13 @@ fn group_windows(args: &[Value]) -> Value {
         let app = g.app.unwrap_or_else(|| {
             let name = if g.app_id.is_empty() { key.clone() } else { g.app_id.clone() };
             let icon = icons::icon(&name.to_lowercase(), DEFAULT_SIZE);
-            let mut value =
-                value(&ScannedApp { entry: AppEntry { name, ..Default::default() }, icon: None });
+            // A pinned application keeps its desktop file id, so launching works as soon as
+            // the scan finds it; windows without a desktop file have none.
+            let id = if g.pinned { key.clone() } else { String::new() };
+            let mut value = value(&ScannedApp {
+                entry: AppEntry { id, name, ..Default::default() },
+                icon: None,
+            });
             if let Value::Struct(s) = &mut value {
                 s.set_field("icon".into(), Value::Image(icon));
             }

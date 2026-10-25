@@ -4,7 +4,9 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use slint_interpreter::Value;
-use slintlu::compositors::{self, Action, Backend, Compositor, DesktopState, Window};
+use slintlu::compositors::{
+    self, Action, Backend, Compositor, DesktopState, SwitcherItem, SwitcherState, Window,
+};
 
 use super::worker::{run_action, spawn_watcher};
 use crate::scripting::bridge::{list_value, number_arg, string, string_arg, struct_value};
@@ -51,6 +53,8 @@ fn publish(host: &ShellHost, state: &DesktopState) {
         return;
     }
     host.set_global("Compositor", "wallpaper", string(&state.wallpaper));
+    host.set_global("Compositor", "wallpaper-poster", string(&state.wallpaper_poster));
+    host.set_global("Compositor", "wallpaper-live", Value::Bool(state.wallpaper_live));
     host.set_global("Compositor", "language", string(&state.language));
     if let Some(request) = &state.request {
         host.set_global("Compositor", "request", string(&request.action));
@@ -74,6 +78,53 @@ fn action(
             if let Some(action) = make(args) {
                 let backend = backend.clone();
                 run_action("workspaces", move || backend.perform(&action));
+            }
+            Value::Void
+        }),
+    );
+}
+
+fn switcher_entry(item: &SwitcherItem) -> Value {
+    let icon = |app_id: &str| {
+        Value::Image(
+            super::apps::icon_for(app_id)
+                .filter(|i| i.size().width > 0)
+                .unwrap_or_else(|| super::icons::icon(&app_id.to_lowercase(), 48)),
+        )
+    };
+    struct_value([
+        ("id", Value::Number(item.id as f64)),
+        ("title", string(&item.title)),
+        ("app-id", string(&item.app_id)),
+        ("icon", icon(&item.app_id)),
+        ("workspace", Value::Number(item.workspace as f64)),
+        ("focused", Value::Bool(item.focused)),
+        ("minimized", Value::Bool(item.minimized)),
+        ("icons", list_value(item.apps.iter().map(|a| icon(a)))),
+    ])
+}
+
+fn publish_switcher(host: &ShellHost, state: &SwitcherState) {
+    host.set_global("Switcher", "entries", list_value(state.items.iter().map(switcher_entry)));
+    host.set_global("Switcher", "workspaces", Value::Bool(state.workspaces));
+    host.set_global("Switcher", "index", Value::Number(state.index as f64));
+    host.set_global("Switcher", "active", Value::Bool(state.active));
+}
+
+fn switcher_action(
+    host: &ShellHost,
+    backend: &Arc<dyn Backend>,
+    callback: &str,
+    make: fn(&[Value]) -> Option<Action>,
+) {
+    let backend = backend.clone();
+    host.on_callback(
+        "Switcher",
+        callback,
+        Rc::new(move |args| {
+            if let Some(action) = make(args) {
+                let backend = backend.clone();
+                run_action("switcher", move || backend.perform(&action));
             }
             Value::Void
         }),
@@ -115,6 +166,28 @@ pub fn install(host: &Rc<ShellHost>, compositor: Compositor) {
             Value::Void
         }),
     );
+    if compositor == Compositor::LunaDash {
+        host.set_global("Switcher", "available", Value::Bool(true));
+        let switcher = backend.clone();
+        spawn_watcher("switcher", move || {
+            switcher.watch_switcher(&mut |state| {
+                let state = state.clone();
+                host::post(move |host| publish_switcher(host, &state));
+            })
+        });
+        switcher_action(host, &backend, "open", |a| {
+            Some(Action::OpenSwitcher { workspaces: matches!(a.first(), Some(Value::Bool(true))) })
+        });
+        switcher_action(host, &backend, "step", |a| {
+            Some(Action::StepSwitcher(number_arg(a, 0)? as i32))
+        });
+        switcher_action(host, &backend, "choose", |a| {
+            Some(Action::ChooseSwitcher(number_arg(a, 0)? as u64))
+        });
+        switcher_action(host, &backend, "cancel", |_| {
+            Some(Action::FinishSwitcher { accept: false })
+        });
+    }
     action(host, &backend, "focus", |a| Some(Action::FocusWorkspace(number_arg(a, 0)? as u64)));
     action(host, &backend, "focus-window", |a| Some(Action::FocusWindow(window_id(a)?)));
     action(host, &backend, "close-window", |a| Some(Action::CloseWindow(window_id(a)?)));

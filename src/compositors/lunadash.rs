@@ -10,11 +10,11 @@ use std::time::Duration;
 use serde_json::{Value, json};
 
 use super::Backend;
-use super::model::{Action, DesktopState, Window, Workspace};
+use super::model::{Action, DesktopState, SwitcherItem, SwitcherState, Window, Workspace};
 use crate::util::uri::path_from_path_or_uri;
 
-/// LunaDash's fixed number of workspaces.
-const WORKSPACES: i64 = 10;
+/// The number of workspaces of LunaDash versions that do not report it (they had ten).
+const DEFAULT_WORKSPACES: i64 = 10;
 const POLL: Duration = Duration::from_millis(700);
 const TIMEOUT: Duration = Duration::from_millis(1500);
 
@@ -64,6 +64,8 @@ impl LunaDash {
 /// Builds the shell's view from a `status` response.
 fn build_state(status: &Value) -> DesktopState {
     let active = status["workspace"].as_i64().unwrap_or(0);
+    // LunaDash adds and removes workspaces as windows come and go.
+    let count = status["workspaceCount"].as_i64().unwrap_or(DEFAULT_WORKSPACES).max(active + 1);
     let output = status["outputs"]
         .as_array()
         .and_then(|o| o.first())
@@ -71,7 +73,7 @@ fn build_state(status: &Value) -> DesktopState {
         .unwrap_or_default()
         .to_owned();
     let mut state = DesktopState {
-        workspaces: (0..WORKSPACES)
+        workspaces: (0..count)
             .map(|index| Workspace {
                 id: index as u64,
                 index: index + 1,
@@ -105,11 +107,62 @@ fn build_state(status: &Value) -> DesktopState {
             .as_str()
             .map(|uri| path_from_path_or_uri(uri).to_string_lossy().into_owned())
             .unwrap_or_default(),
+        wallpaper_poster: status["wallpaperPoster"]
+            .as_str()
+            .map(|uri| path_from_path_or_uri(uri).to_string_lossy().into_owned())
+            .unwrap_or_default(),
+        wallpaper_live: status["wallpaperLive"].as_bool().unwrap_or(false),
         language: status["language"].as_str().unwrap_or_default().to_owned(),
         session_ending: status["shutdown"].as_bool().unwrap_or(false),
     };
     state.normalize();
     state
+}
+
+/// Builds the switcher state from LunaDash's interaction snapshot.
+fn build_switcher(snapshot: &Value) -> SwitcherState {
+    let workspaces = snapshot["scope"].as_str() == Some("workspaces");
+    let list = if workspaces { &snapshot["workspaces"] } else { &snapshot["windows"] };
+    let text = |v: &Value, key: &str| v[key].as_str().unwrap_or_default().to_owned();
+    let items = list
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|item| {
+            let id = item["id"].as_u64()?;
+            let windows = item["windows"].as_array();
+            Some(SwitcherItem {
+                id,
+                title: text(item, "title"),
+                app_id: text(item, "appId"),
+                // Workspace entries are numbered from 1; windows report a 0-based workspace.
+                workspace: if workspaces {
+                    id - 1
+                } else {
+                    item["workspace"].as_u64().unwrap_or(0)
+                },
+                focused: item["focused"].as_bool().unwrap_or(false),
+                minimized: item["minimized"].as_bool().unwrap_or(false),
+                apps: windows.into_iter().flatten().map(|w| text(w, "appId")).collect(),
+            })
+        })
+        .collect::<Vec<_>>();
+    let index = snapshot["index"].as_u64().unwrap_or(0) as usize;
+    SwitcherState {
+        active: snapshot["active"].as_bool().unwrap_or(false) && !items.is_empty(),
+        workspaces,
+        index: index.min(items.len().saturating_sub(1)),
+        items,
+    }
+}
+
+/// Reads the interaction snapshot LunaDash writes next to its control socket.
+fn read_switcher(path: &std::path::Path) -> SwitcherState {
+    std::fs::read_to_string(path)
+        .ok()
+        .and_then(|text| serde_json::from_str::<Value>(&text).ok())
+        .map(|snapshot| build_switcher(&snapshot))
+        .unwrap_or_default()
 }
 
 /// The serials LunaDash bumps when a shortcut asks the shell for something.
@@ -197,8 +250,56 @@ impl Backend for LunaDash {
             // Activating also restores a minimized window and switches to its workspace.
             Action::FocusWindow(id) => self.request("activate-window", &id.to_string()),
             Action::CloseWindow(id) => self.request("close", &id.to_string()),
+            Action::OpenSwitcher { workspaces } => {
+                self.request("switch-begin", if *workspaces { "workspaces" } else { "windows" })
+            }
+            Action::StepSwitcher(delta) => {
+                let direction = if *delta < 0 { "previous" } else { "next" };
+                for _ in 1..delta.unsigned_abs() {
+                    self.request("switch-step", direction)?;
+                }
+                self.request("switch-step", direction)
+            }
+            Action::ChooseSwitcher(id) => {
+                self.request("switch-window", &id.to_string())?;
+                self.request("switch-accept", "")
+            }
+            Action::FinishSwitcher { accept } => {
+                self.request(if *accept { "switch-accept" } else { "switch-cancel" }, "")
+            }
         }
         .map(drop)
+    }
+
+    fn watch_switcher(&self, on_state: &mut dyn FnMut(&SwitcherState)) -> io::Result<()> {
+        use rustix::fs::inotify;
+        let mut path = self.socket.clone().into_os_string();
+        path.push("-interaction.json");
+        let path = PathBuf::from(path);
+        let directory = path.parent().map(PathBuf::from).unwrap_or_default();
+        let name = path.file_name().map(|n| n.to_owned()).unwrap_or_default();
+        // LunaDash replaces the file atomically: watch the directory for it being moved in.
+        let fd = inotify::init(inotify::CreateFlags::CLOEXEC)?;
+        inotify::add_watch(
+            &fd,
+            &directory,
+            inotify::WatchFlags::MOVED_TO | inotify::WatchFlags::CLOSE_WRITE,
+        )?;
+        let mut last = read_switcher(&path);
+        on_state(&last);
+        let mut buffer = [std::mem::MaybeUninit::<u8>::uninit(); 4096];
+        let mut reader = inotify::Reader::new(&fd, &mut buffer);
+        loop {
+            let event = reader.next()?;
+            if event.file_name().is_none_or(|n| n.to_bytes() != name.as_encoded_bytes()) {
+                continue;
+            }
+            let state = read_switcher(&path);
+            if state != last {
+                on_state(&state);
+                last = state;
+            }
+        }
     }
 
     fn command(&self, method: &str, value: &str) -> io::Result<String> {
@@ -265,5 +366,45 @@ mod tests {
         });
         let backend = LunaDash { socket: path };
         backend.perform(&Action::FocusWorkspace(3)).unwrap();
+    }
+
+    #[test]
+    fn follows_the_dynamic_workspace_count() {
+        let state = build_state(&json!({"workspace": 1, "workspaceCount": 3}));
+        assert_eq!(state.workspaces.len(), 3);
+        assert!(state.workspaces[1].active);
+        // Older LunaDash versions had ten fixed workspaces.
+        assert_eq!(build_state(&json!({"workspace": 0})).workspaces.len(), 10);
+        let video = build_state(&json!({
+            "wallpaperPoster": "file:///tmp/poster.png",
+            "wallpaperLive": true,
+        }));
+        assert_eq!(video.wallpaper_poster, "/tmp/poster.png");
+        assert!(video.wallpaper_live);
+    }
+
+    #[test]
+    fn reads_the_switcher_snapshot() {
+        let windows = build_switcher(&json!({
+            "active": true, "scope": "windows", "index": 1,
+            "windows": [
+                {"id": 4, "title": "Files", "appId": "org.gnome.Nautilus", "workspace": 0},
+                {"id": 7, "title": "Term", "appId": "foot", "workspace": 2, "minimized": true},
+            ],
+        }));
+        assert!(windows.active && !windows.workspaces);
+        assert_eq!(windows.index, 1);
+        assert_eq!(windows.items[1].workspace, 2);
+        assert!(windows.items[1].minimized);
+
+        let workspaces = build_switcher(&json!({
+            "active": true, "scope": "workspaces", "index": 9,
+            "workspaces": [{"id": 1, "windows": [{"appId": "foot"}]}, {"id": 2, "windows": []}],
+        }));
+        assert!(workspaces.workspaces);
+        assert_eq!(workspaces.index, 1, "the index is clamped to the entries");
+        assert_eq!(workspaces.items[0].workspace, 0);
+        assert_eq!(workspaces.items[0].apps, vec!["foot".to_owned()]);
+        assert!(!build_switcher(&json!({"active": true, "windows": []})).active);
     }
 }
