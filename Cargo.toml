@@ -49,7 +49,7 @@ slint-interpreter = { version = "~1.18", default-features = false, features = ["
 clap = { version = "4", features = ["derive", "env"], optional = true }
 env_logger = { version = "0.11", optional = true }
 notify = { version = "8", default-features = false, optional = true }
-signal-hook = { version = "0.3", default-features = false, features = ["iterator"], optional = true }
+signal-hook = { version = "0.4", default-features = false, features = ["iterator"], optional = true }
 
 [lints.rust]
 unsafe_op_in_unsafe_fn = "deny"
