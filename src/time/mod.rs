@@ -126,21 +126,56 @@ pub fn month_grid(
 
 /// Formats a calendar date with a `strftime` pattern; empty for invalid input.
 pub fn format_date(year: i32, month: u32, day: u32, pattern: &str) -> String {
+    format_date_in(year, month, day, pattern, crate::i18n::current_language().as_deref())
+}
+
+/// [`format_date`] with weekday and month names in `language` ("zh_TW", "de", …); English
+/// for an unknown or missing language.
+pub fn format_date_in(
+    year: i32,
+    month: u32,
+    day: u32,
+    pattern: &str,
+    language: Option<&str>,
+) -> String {
     use std::fmt::Write;
     let Some(date) = chrono::NaiveDate::from_ymd_opt(year, month, day) else {
         return String::new();
     };
     let mut out = String::new();
-    match write!(out, "{}", date.format(pattern)) {
+    let written = match language.and_then(date_locale) {
+        Some(locale) => write!(out, "{}", date.format_localized(pattern, locale)),
+        None => write!(out, "{}", date.format(pattern)),
+    };
+    match written {
         Ok(()) => out,
         Err(_) => String::new(),
     }
+}
+
+/// The chrono locale for a language tag: "zh_TW" as is, a bare "de" as "de_DE".
+fn date_locale(language: &str) -> Option<chrono::Locale> {
+    let tag = language.replace('-', "_");
+    if let Ok(locale) = chrono::Locale::try_from(tag.as_str()) {
+        return Some(locale);
+    }
+    let base = tag.split('_').next().unwrap_or_default();
+    chrono::Locale::try_from(format!("{base}_{}", base.to_uppercase()).as_str()).ok()
 }
 
 #[cfg(test)]
 mod calendar_tests {
     use super::*;
     use chrono::NaiveDate;
+
+    #[test]
+    fn dates_use_the_interface_language() {
+        assert_eq!(format_date_in(2026, 10, 25, "%A %B", None), "Sunday October");
+        assert_eq!(format_date_in(2026, 10, 25, "%A", Some("zh_TW")), "週日");
+        assert_eq!(format_date_in(2026, 10, 25, "%A", Some("de")), "Sonntag");
+        assert_eq!(format_date_in(2026, 10, 25, "%A", Some("xx")), "Sunday");
+        assert_eq!(format_date_in(2026, 10, 25, "%Y年%-m月%-d日", Some("zh_TW")), "2026年10月25日");
+    }
 
     #[test]
     fn october_2026_starts_on_thursday() {
@@ -158,7 +193,7 @@ mod calendar_tests {
 
     #[test]
     fn formats_dates() {
-        assert_eq!(format_date(2026, 10, 24, "%B %Y"), "October 2026");
-        assert_eq!(format_date(2026, 2, 30, "%d"), "");
+        assert_eq!(format_date_in(2026, 10, 24, "%B %Y", None), "October 2026");
+        assert_eq!(format_date_in(2026, 2, 30, "%d", None), "");
     }
 }
