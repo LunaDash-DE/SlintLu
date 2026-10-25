@@ -1,6 +1,5 @@
 /target
-*.png
-!docs/**/*.png
+!docs/
 .direnv/
 .idea/
 .vscode/
