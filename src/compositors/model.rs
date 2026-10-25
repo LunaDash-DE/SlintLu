@@ -51,6 +51,8 @@ pub struct DesktopState {
     pub wallpaper: String,
     /// The desktop language chosen in the compositor, e.g. "zh_TW"; empty when it has none.
     pub language: String,
+    /// The compositor is ending the session and asks its shell to exit (LunaDash).
+    pub session_ending: bool,
 }
 
 impl DesktopState {

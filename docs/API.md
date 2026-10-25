@@ -22,7 +22,7 @@ An ordinary application window (settings, dialogs …), shown once.
 
 ### Icon (inherits `Image`)
 
-One of SlintLu's stroke icons by name, tinted with `color`. Names: apps, battery, battery-charging, bell, bell-off, bluetooth, brightness, calendar, check, chevron-down, chevron-left, chevron-right, clipboard, close, coffee, cpu, dashboard, diamond, disk, dock, ethernet, folder, globe, image, info, keyboard, language, lock, logout, memory, mic, minus, moon, music, network, next, palette, panel, pause, play, plus, power, previous, reboot, screenshot, search, settings, sleep, sun, terminal, thermometer, trash, user, volume, volume-low, volume-mute, warning, wifi, wifi-off, workspace. Unknown names show "info".
+One of SlintLu's stroke icons by name, tinted with `color`. Names: apps, arrow-left, arrow-right, arrow-up, battery, battery-charging, bell, bell-off, bluetooth, brightness, calendar, check, chevron-down, chevron-left, chevron-right, clipboard, close, coffee, cpu, dashboard, diamond, disk, dock, document, download, enter, ethernet, eye, eye-off, file, folder, globe, grid, home, image, info, keyboard, language, list, lock, logout, maximize, memory, mic, minus, monitor, moon, music, network, next, palette, panel, pause, play, plus, power, previous, reboot, screenshot, search, settings, sleep, sun, terminal, thermometer, trash, usb, user, video, volume, volume-low, volume-mute, warning, wifi, wifi-off, window, workspace. Unknown names show "info".
 
 | Member | Type | Access | Description |
 |---|---|---|---|
@@ -200,6 +200,7 @@ Translations. Put `<language>.po` files (e.g. from `slint-tr-extractor`) in an `
 | `language` | `string` | read | The active language, e.g. "de" or "zh_TW"; empty for the untranslated texts. |
 | `languages` | `[string]` | read | Languages with a translation in the shell's `i18n` directory. |
 | `set-language(language: string)` | callback | call | Switches the language at runtime ("" for untranslated texts). |
+| `language-name(language: string)` | callback → `string` | call | A language's name in that language, for pickers: "zh_TW" → "繁體中文", "" → "English". |
 
 ### Icons
 

@@ -106,6 +106,7 @@ fn build_state(status: &Value) -> DesktopState {
             .map(|uri| path_from_path_or_uri(uri).to_string_lossy().into_owned())
             .unwrap_or_default(),
         language: status["language"].as_str().unwrap_or_default().to_owned(),
+        session_ending: status["shutdown"].as_bool().unwrap_or(false),
     };
     state.normalize();
     state
@@ -163,8 +164,14 @@ impl Backend for LunaDash {
         let mut last: Option<DesktopState> = None;
         let mut serials: Option<Serials> = None;
         let mut request: Option<crate::compositors::CompositorRequest> = None;
+        // LunaDash attaches its translation table to `status` unless it is told the language
+        // the client already knows; pass the last one seen.
+        let mut language = String::new();
         loop {
-            let status = self.request("status", "")?;
+            let status = self.request("status", &language)?;
+            if let Some(current) = status["language"].as_str() {
+                current.clone_into(&mut language);
+            }
             let mut state = build_state(&status);
             let now = Serials::of(&status);
             // The first snapshot only records the serials: old requests are not replayed.
@@ -187,7 +194,8 @@ impl Backend for LunaDash {
     fn perform(&self, action: &Action) -> io::Result<()> {
         match action {
             Action::FocusWorkspace(id) => self.request("workspace", &id.to_string()),
-            Action::FocusWindow(id) => self.request("focus", &id.to_string()),
+            // Activating also restores a minimized window and switches to its workspace.
+            Action::FocusWindow(id) => self.request("activate-window", &id.to_string()),
             Action::CloseWindow(id) => self.request("close", &id.to_string()),
         }
         .map(drop)
@@ -223,6 +231,8 @@ mod tests {
         assert_eq!(state.focused_window().unwrap().title, "Zed");
         assert_eq!(state.wallpaper, "/usr/share/backgrounds/Night Sky.png");
         assert_eq!(state.language, "zh_TW");
+        assert!(!state.session_ending);
+        assert!(build_state(&json!({"shutdown": true})).session_ending);
     }
 
     #[test]

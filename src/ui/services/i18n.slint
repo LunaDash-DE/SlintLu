@@ -8,4 +8,6 @@ export global I18n {
 
     // Switches the language at runtime ("" for untranslated texts).
     callback set-language(language: string);
+    // A language's name in that language, for pickers: "zh_TW" → "繁體中文", "" → "English".
+    pure callback language-name(language: string) -> string;
 }

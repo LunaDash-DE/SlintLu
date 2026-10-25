@@ -34,7 +34,14 @@ impl WindowRenderer {
                     return Ok(renderer);
                 }
                 Err(e) => {
-                    log::warn!("{kind} renderer unavailable: {e}");
+                    // Warn once per renderer; every window tries the same ones.
+                    let mut failed = ctx.failed_renderers.borrow_mut();
+                    if failed.contains(&kind) {
+                        log::debug!("{kind} renderer unavailable: {e}");
+                    } else {
+                        log::warn!("{kind} renderer unavailable: {e}");
+                        failed.push(kind);
+                    }
                     last_error = e;
                 }
             }

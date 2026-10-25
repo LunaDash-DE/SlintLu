@@ -7,5 +7,5 @@ mod mo;
 mod po;
 
 pub use catalog::{CompiledCatalogs, compile_catalogs};
-pub use locale::{current_language, normalize_language};
+pub use locale::{current_language, language_name, normalize_language};
 pub use po::{Message, parse_po};

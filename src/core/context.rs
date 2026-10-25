@@ -34,6 +34,8 @@ pub(crate) struct Context {
     pub fractional_scaling: Option<crate::window::scale::FractionalScaling>,
     pub idle: crate::idle::IdleState,
     pub renderer: RendererKind,
+    /// Renderers that already failed for some window: later failures are logged at debug level.
+    pub failed_renderers: RefCell<Vec<RendererKind>>,
     /// Interface names of every global the compositor advertised at startup.
     pub globals: Vec<String>,
     pub windows: RefCell<Vec<Weak<WaylandWindow>>>,

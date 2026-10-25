@@ -25,9 +25,73 @@ fn language_from(var: impl Fn(&str) -> Option<String>) -> Option<String> {
         .find_map(|name| var(name).and_then(|v| normalize_language(&v)))
 }
 
+/// Languages by their own name ("endonym"), for language pickers. Region-specific entries come
+/// before the plain language.
+const ENDONYMS: &[(&str, &str)] = &[
+    ("zh_TW", "繁體中文"),
+    ("zh_HK", "繁體中文（香港）"),
+    ("zh_Hant", "繁體中文"),
+    ("zh_CN", "简体中文"),
+    ("zh_SG", "简体中文（新加坡）"),
+    ("zh_Hans", "简体中文"),
+    ("zh", "中文"),
+    ("pt_BR", "Português (Brasil)"),
+    ("en_GB", "English (UK)"),
+    ("en", "English"),
+    ("ja", "日本語"),
+    ("ko", "한국어"),
+    ("de", "Deutsch"),
+    ("fr", "Français"),
+    ("es", "Español"),
+    ("it", "Italiano"),
+    ("pt", "Português"),
+    ("ru", "Русский"),
+    ("uk", "Українська"),
+    ("pl", "Polski"),
+    ("cs", "Čeština"),
+    ("nl", "Nederlands"),
+    ("sv", "Svenska"),
+    ("da", "Dansk"),
+    ("nb", "Norsk bokmål"),
+    ("fi", "Suomi"),
+    ("el", "Ελληνικά"),
+    ("hu", "Magyar"),
+    ("ro", "Română"),
+    ("tr", "Türkçe"),
+    ("ar", "العربية"),
+    ("he", "עברית"),
+    ("fa", "فارسی"),
+    ("hi", "हिन्दी"),
+    ("th", "ไทย"),
+    ("vi", "Tiếng Việt"),
+    ("id", "Bahasa Indonesia"),
+];
+
+/// The name of a language in that language, e.g. "zh_TW" → "繁體中文", "de_AT" → "Deutsch";
+/// unknown codes are returned unchanged, and "" is English (untranslated texts).
+pub fn language_name(code: &str) -> String {
+    let code = normalize_language(code).unwrap_or_else(|| "en".to_owned());
+    let base = code.split(['_', '-']).next().unwrap_or_default();
+    ENDONYMS
+        .iter()
+        .find(|(c, _)| c.eq_ignore_ascii_case(&code.replace('-', "_")))
+        .or_else(|| ENDONYMS.iter().find(|(c, _)| c.eq_ignore_ascii_case(base)))
+        .map_or(code.clone(), |(_, name)| (*name).to_owned())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn names_languages() {
+        assert_eq!(language_name("zh_TW"), "繁體中文");
+        assert_eq!(language_name("zh_TW.UTF-8"), "繁體中文");
+        assert_eq!(language_name("zh-CN"), "简体中文");
+        assert_eq!(language_name("de_AT"), "Deutsch");
+        assert_eq!(language_name(""), "English");
+        assert_eq!(language_name("tlh"), "tlh");
+    }
 
     #[test]
     fn normalizes_locales() {

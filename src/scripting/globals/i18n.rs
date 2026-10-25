@@ -35,6 +35,11 @@ pub fn load_translations(host: &ShellHost) {
 
 pub fn install(host: &Rc<ShellHost>) {
     host.set_global("I18n", "language", string(i18n::current_language().unwrap_or_default()));
+    host.on_callback(
+        "I18n",
+        "language-name",
+        Rc::new(|args| string(i18n::language_name(&string_arg(args, 0).unwrap_or_default()))),
+    );
     let weak = Rc::downgrade(host);
     host.on_callback(
         "I18n",
