@@ -53,6 +53,12 @@ pub struct DesktopState {
     pub wallpaper_poster: String,
     /// The compositor plays the (video) wallpaper itself, below the shell's surfaces.
     pub wallpaper_live: bool,
+    /// The compositor's wallpaper library, for compositors that keep one (LunaDash).
+    pub wallpapers: Vec<WallpaperEntry>,
+    /// The folder the wallpaper library is read from.
+    pub wallpaper_directory: String,
+    /// The compositor's own preferences as a JSON object (LunaDash); empty otherwise.
+    pub preferences: String,
     /// The desktop language chosen in the compositor, e.g. "zh_TW"; empty when it has none.
     pub language: String,
     /// The compositor is ending the session and asks its shell to exit (LunaDash).
@@ -90,6 +96,20 @@ pub enum Action {
     FinishSwitcher {
         accept: bool,
     },
+}
+
+/// A wallpaper in the compositor's library.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct WallpaperEntry {
+    pub path: String,
+    pub name: String,
+    /// The subfolder it was found in ("Bundled" for the compositor's own).
+    pub category: String,
+    pub video: bool,
+    pub bundled: bool,
+    pub favorite: bool,
+    /// A still image of it (the file itself for images, a poster frame for videos).
+    pub preview: String,
 }
 
 /// One entry of the compositor's window switcher.

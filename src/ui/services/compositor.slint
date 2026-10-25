@@ -1,3 +1,16 @@
+// A wallpaper in the compositor's library (LunaDash).
+export struct WallpaperInfo {
+    path: string,
+    name: string,
+    // The subfolder it was found in ("Bundled" for the compositor's own wallpapers).
+    category: string,
+    video: bool,
+    bundled: bool,
+    favorite: bool,
+    // A still image of it: the file itself for images, a poster frame for videos.
+    preview: string,
+}
+
 // The compositor itself: its name, requests it sends to the shell (keyboard shortcuts that
 // open shell UI) and compositor-specific commands.
 export global Compositor {
@@ -21,6 +34,28 @@ export global Compositor {
     in property <bool> wallpaper-live;
     // The desktop language chosen in the compositor (LunaDash), e.g. "zh_TW"; empty otherwise.
     in property <string> language;
+    // The compositor's wallpaper library (LunaDash): its folder plus the bundled wallpapers.
+    in property <[WallpaperInfo]> wallpapers;
+    in property <string> wallpaper-directory;
+    // The categories (subfolders) of the wallpaper library, sorted.
+    in property <[string]> wallpaper-categories;
+    // Increases when the compositor's preferences change; pass it to the preference-* readers.
+    in property <int> preferences-revision;
+
+    // The library entries matching a search: `collection` is "library" (all), "bundled" or
+    // "favorites"; `category` "" for all; `kind` "all", "image" or "video". Pass
+    // `wallpapers.length` (or any value that changes with the library) as `revision`.
+    pure callback filter-wallpapers(query: string, collection: string, category: string, kind: string, revision: int) -> [WallpaperInfo];
+
+    // The compositor's own preferences (LunaDash), e.g. preference-number("gap", 12, revision);
+    // the fallback when the compositor has none or does not know the key.
+    pure callback preference-number(key: string, fallback: float, revision: int) -> float;
+    pure callback preference-bool(key: string, fallback: bool, revision: int) -> bool;
+    pure callback preference-string(key: string, fallback: string, revision: int) -> string;
+    // Changes a compositor preference; readers see the new value immediately.
+    callback set-preference-number(key: string, value: float);
+    callback set-preference-bool(key: string, value: bool);
+    callback set-preference-string(key: string, value: string);
 
     // A compositor-specific command, e.g. command("launch-default", "terminal") on LunaDash.
     callback command(method: string, value: string);

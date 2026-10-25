@@ -178,6 +178,17 @@ The compositor itself: its name, requests it sends to the shell (keyboard shortc
 | `wallpaper-poster` | `string` | read | A still frame of a video wallpaper (LunaDash); empty for images. |
 | `wallpaper-live` | `bool` | read | Whether the compositor plays the (video) wallpaper itself below the shell's surfaces; shells should keep their wallpaper transparent then. |
 | `language` | `string` | read | The desktop language chosen in the compositor (LunaDash), e.g. "zh_TW"; empty otherwise. |
+| `wallpapers` | `[WallpaperInfo]` | read | The compositor's wallpaper library (LunaDash): its folder plus the bundled wallpapers. |
+| `wallpaper-directory` | `string` | read |  |
+| `wallpaper-categories` | `[string]` | read | The categories (subfolders) of the wallpaper library, sorted. |
+| `preferences-revision` | `int` | read | Increases when the compositor's preferences change; pass it to the preference-* readers. |
+| `filter-wallpapers(query: string, collection: string, category: string, kind: string, revision: int)` | callback → `[WallpaperInfo]` | call | The library entries matching a search: `collection` is "library" (all), "bundled" or "favorites"; `category` "" for all; `kind` "all", "image" or "video". Pass `wallpapers.length` (or any value that changes with the library) as `revision`. |
+| `preference-number(key: string, fallback: float, revision: int)` | callback → `float` | call | The compositor's own preferences (LunaDash), e.g. preference-number("gap", 12, revision); the fallback when the compositor has none or does not know the key. |
+| `preference-bool(key: string, fallback: bool, revision: int)` | callback → `bool` | call |  |
+| `preference-string(key: string, fallback: string, revision: int)` | callback → `string` | call |  |
+| `set-preference-number(key: string, value: float)` | callback | call | Changes a compositor preference; readers see the new value immediately. |
+| `set-preference-bool(key: string, value: bool)` | callback | call |  |
+| `set-preference-string(key: string, value: string)` | callback | call |  |
 | `command(method: string, value: string)` | callback | call | A compositor-specific command, e.g. command("launch-default", "terminal") on LunaDash. |
 
 ### Files
@@ -699,6 +710,20 @@ A monitor.
 | `checked` | `bool` |  |  |
 | `depth` | `int` |  | Nesting level: entries of a submenu follow their parent with depth + 1. |
 | `has-children` | `bool` |  |  |
+
+### WallpaperInfo
+
+A wallpaper in the compositor's library (LunaDash).
+
+| Member | Type | Access | Description |
+|---|---|---|---|
+| `path` | `string` |  |  |
+| `name` | `string` |  |  |
+| `category` | `string` |  | The subfolder it was found in ("Bundled" for the compositor's own wallpapers). |
+| `video` | `bool` |  |  |
+| `bundled` | `bool` |  |  |
+| `favorite` | `bool` |  |  |
+| `preview` | `string` |  | A still image of it: the file itself for images, a poster frame for videos. |
 
 ### WindowInfo
 

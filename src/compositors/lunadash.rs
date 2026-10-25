@@ -10,7 +10,9 @@ use std::time::Duration;
 use serde_json::{Value, json};
 
 use super::Backend;
-use super::model::{Action, DesktopState, SwitcherItem, SwitcherState, Window, Workspace};
+use super::model::{
+    Action, DesktopState, SwitcherItem, SwitcherState, WallpaperEntry, Window, Workspace,
+};
 use crate::util::uri::path_from_path_or_uri;
 
 /// The number of workspaces of LunaDash versions that do not report it (they had ten).
@@ -112,11 +114,50 @@ fn build_state(status: &Value) -> DesktopState {
             .map(|uri| path_from_path_or_uri(uri).to_string_lossy().into_owned())
             .unwrap_or_default(),
         wallpaper_live: status["wallpaperLive"].as_bool().unwrap_or(false),
+        wallpapers: wallpaper_library(&status["wallpapers"]),
+        wallpaper_directory: status["wallpapers"]["directory"]
+            .as_str()
+            .unwrap_or_default()
+            .to_owned(),
+        preferences: status
+            .get("appearance")
+            .filter(|p| p.is_object())
+            .map(|p| p.to_string())
+            .unwrap_or_default(),
         language: status["language"].as_str().unwrap_or_default().to_owned(),
         session_ending: status["shutdown"].as_bool().unwrap_or(false),
     };
     state.normalize();
     state
+}
+
+/// The entries of LunaDash's wallpaper library snapshot.
+fn wallpaper_library(snapshot: &Value) -> Vec<WallpaperEntry> {
+    let local = |v: &Value| {
+        v.as_str()
+            .filter(|s| !s.is_empty())
+            .map(|uri| path_from_path_or_uri(uri).to_string_lossy().into_owned())
+            .unwrap_or_default()
+    };
+    snapshot["library"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|entry| {
+            let path = entry["path"].as_str().filter(|p| !p.is_empty())?.to_owned();
+            let video = entry["type"].as_str() == Some("video");
+            let preview = local(&entry["preview"]);
+            Some(WallpaperEntry {
+                name: entry["name"].as_str().unwrap_or_default().to_owned(),
+                category: entry["category"].as_str().unwrap_or_default().to_owned(),
+                video,
+                bundled: entry["bundled"].as_bool().unwrap_or(false),
+                favorite: entry["favorite"].as_bool().unwrap_or(false),
+                preview: if preview.is_empty() && !video { path.clone() } else { preview },
+                path,
+            })
+        })
+        .collect()
 }
 
 /// Builds the switcher state from LunaDash's interaction snapshot.
@@ -381,6 +422,32 @@ mod tests {
         }));
         assert_eq!(video.wallpaper_poster, "/tmp/poster.png");
         assert!(video.wallpaper_live);
+    }
+
+    #[test]
+    fn reads_the_wallpaper_library_and_preferences() {
+        let state = build_state(&json!({
+            "appearance": {"gap": 12, "tilingMode": "scroll"},
+            "wallpapers": {
+                "directory": "/home/u/Pictures/Wallpapers",
+                "library": [
+                    {"path": "/w/a.png", "name": "a", "category": "Nature", "type": "image",
+                     "preview": "file:///w/a.png", "favorite": true},
+                    {"path": "/w/b.mp4", "name": "b", "category": "Live", "type": "video",
+                     "preview": "", "bundled": false},
+                    {"name": "no path"},
+                ],
+            },
+        }));
+        assert_eq!(state.wallpaper_directory, "/home/u/Pictures/Wallpapers");
+        assert_eq!(state.wallpapers.len(), 2, "entries without a path are skipped");
+        assert_eq!(state.wallpapers[0].preview, "/w/a.png");
+        assert!(state.wallpapers[0].favorite && !state.wallpapers[0].video);
+        assert!(state.wallpapers[1].video);
+        assert_eq!(state.wallpapers[1].preview, "", "videos without a poster have no preview");
+        let preferences: Value = serde_json::from_str(&state.preferences).unwrap();
+        assert_eq!(preferences["tilingMode"], "scroll");
+        assert_eq!(build_state(&json!({})).preferences, "");
     }
 
     #[test]
