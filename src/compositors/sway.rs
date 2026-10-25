@@ -121,6 +121,7 @@ fn build_state(workspaces: &Value, tree: &Value, inputs: &Value) -> DesktopState
             .unwrap_or_default()
             .to_owned(),
         request: None,
+        ..DesktopState::default()
     };
     state.normalize();
     state

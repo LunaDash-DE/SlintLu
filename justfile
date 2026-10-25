@@ -45,12 +45,14 @@ test *args:
 doc:
     RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --document-private-items
 
-# Regenerate docs/API.md from the @slintlu library
+# Regenerate the Icon component and docs/API.md from the @slintlu library
 api-docs:
+    python3 scripts/gen-icons.py
     python3 scripts/gen-api-docs.py
 
-# Fail when docs/API.md is out of date (CI)
+# Fail when the Icon component or docs/API.md is out of date (CI)
 api-docs-check:
+    python3 scripts/gen-icons.py --check
     python3 scripts/gen-api-docs.py --check
 
 # Licences, advisories, duplicate and banned crates (needs cargo-deny)

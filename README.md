@@ -125,13 +125,14 @@ src/
 ├── system/       CPU, memory, disks, temperatures, batteries, network, host
 ├── theme/        palettes, theme.json, pywal
 ├── time/         clock formatting
-├── util/         human readable sizes, rates and durations
+├── util/         human readable sizes, rates and durations, file:// URIs
 ├── ui/           the `@slintlu` Slint library
 ├── scripting/    interpreter bridge: compiling, instantiating, globals   (runtime)
 ├── config/       configuration paths and hot reload                      (runtime)
 └── cli/          the `slintlu` command line                              (runtime)
+res/              shared assets shipped with the library (icons for `Icon`, see res/README.md)
 examples/         starter configuration and Rust examples
-scripts/          headless sway integration test, API docs generator
+scripts/          headless sway integration test, API docs and icon generators
 nix/              Nix package and Home Manager module (see flake.nix)
 ```
 

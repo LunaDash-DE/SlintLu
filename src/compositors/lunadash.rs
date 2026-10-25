@@ -11,6 +11,7 @@ use serde_json::{Value, json};
 
 use super::Backend;
 use super::model::{Action, DesktopState, Window, Workspace};
+use crate::util::uri::path_from_path_or_uri;
 
 /// LunaDash's fixed number of workspaces.
 const WORKSPACES: i64 = 10;
@@ -100,6 +101,11 @@ fn build_state(status: &Value) -> DesktopState {
             .collect(),
         keyboard_layout: String::new(),
         request: None,
+        wallpaper: status["wallpaperImage"]
+            .as_str()
+            .map(|uri| path_from_path_or_uri(uri).to_string_lossy().into_owned())
+            .unwrap_or_default(),
+        language: status["language"].as_str().unwrap_or_default().to_owned(),
     };
     state.normalize();
     state
@@ -204,7 +210,9 @@ mod tests {
                 {"id": 7, "title": "Zed", "appId": "dev.zed.Zed", "workspace": 2, "focused": true, "mapped": true},
                 {"id": 8, "title": "Term", "appId": "foot", "workspace": 0, "focused": false, "mapped": true},
                 {"id": 9, "title": "hidden", "appId": "x", "workspace": 0, "mapped": false}
-            ]
+            ],
+            "wallpaperImage": "file:///usr/share/backgrounds/Night%20Sky.png",
+            "language": "zh_TW"
         });
         let state = build_state(&status);
         assert_eq!(state.workspaces.len(), 10);
@@ -213,6 +221,8 @@ mod tests {
         assert_eq!(state.workspaces[0].windows, 1);
         assert_eq!(state.windows.len(), 2);
         assert_eq!(state.focused_window().unwrap().title, "Zed");
+        assert_eq!(state.wallpaper, "/usr/share/backgrounds/Night Sky.png");
+        assert_eq!(state.language, "zh_TW");
     }
 
     #[test]

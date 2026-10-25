@@ -14,8 +14,11 @@ pub struct FileEntry {
     pub is_dir: bool,
 }
 
-/// Expands a leading `~` to the home directory.
+/// Expands a leading `~` to the home directory; `file://` URIs become paths.
 pub fn expand_home(path: &str) -> PathBuf {
+    if let Some(path) = crate::util::uri::file_uri_path(path) {
+        return path;
+    }
     match path.strip_prefix('~') {
         Some(rest) => xdg::home_dir().join(rest.trim_start_matches('/')),
         None => PathBuf::from(path),

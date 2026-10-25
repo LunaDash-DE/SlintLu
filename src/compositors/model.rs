@@ -47,6 +47,10 @@ pub struct DesktopState {
     pub keyboard_layout: String,
     /// The latest request from the compositor, for compositors that send them.
     pub request: Option<CompositorRequest>,
+    /// The wallpaper image, for compositors that manage it (a local path; empty otherwise).
+    pub wallpaper: String,
+    /// The desktop language chosen in the compositor, e.g. "zh_TW"; empty when it has none.
+    pub language: String,
 }
 
 impl DesktopState {

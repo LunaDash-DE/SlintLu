@@ -143,6 +143,7 @@ fn build_state(
             .unwrap_or_default()
             .to_owned(),
         request: None,
+        ..DesktopState::default()
     };
     state.normalize();
     state

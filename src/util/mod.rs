@@ -2,4 +2,5 @@
 
 pub mod format;
 pub mod ini;
+pub mod uri;
 pub mod xdg;

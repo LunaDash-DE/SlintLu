@@ -77,7 +77,7 @@ def render(items):
         "",
     ]
     order = {"component": 0, "global": 1, "struct": 2, "enum": 3}
-    titles = {"component": "Window components", "global": "Globals", "struct": "Structs", "enum": "Enums"}
+    titles = {"component": "Components", "global": "Globals", "struct": "Structs", "enum": "Enums"}
     section = None
     for item in sorted(items, key=lambda i: (order[i["kind"]], i["name"])):
         if item["name"] == "SlintLuRuntime":

@@ -9,7 +9,7 @@ import { PanelWindow, Shell, Clock, Theme } from "@slintlu";
 Globals are filled in by SlintLu; *read* properties are set by the runtime, *read / write*
 ones may also be assigned by the shell, and callbacks are implemented natively.
 
-## Window components
+## Components
 
 ### FloatingWindow (inherits `Window`)
 
@@ -19,6 +19,15 @@ An ordinary application window (settings, dialogs …), shown once.
 |---|---|---|---|
 | `app-id` | `string` | set = `"slintlu"` | The app id reported to the compositor (for window rules). |
 | `ready()` | callback | call | Runs once SlintLu has connected the services (and set `Shell.screen`). `init` runs too early for that: call service callbacks such as `Shared.set-string` from here instead. |
+
+### Icon (inherits `Image`)
+
+One of SlintLu's stroke icons by name, tinted with `color`. Names: apps, battery, battery-charging, bell, bell-off, bluetooth, brightness, calendar, check, chevron-down, chevron-left, chevron-right, clipboard, close, coffee, cpu, dashboard, diamond, disk, dock, ethernet, folder, globe, image, info, keyboard, language, lock, logout, memory, mic, minus, moon, music, network, next, palette, panel, pause, play, plus, power, previous, reboot, screenshot, search, settings, sleep, sun, terminal, thermometer, trash, user, volume, volume-low, volume-mute, warning, wifi, wifi-off, workspace. Unknown names show "info".
+
+| Member | Type | Access | Description |
+|---|---|---|---|
+| `name` | `string` | set | The icon's file name in res/icons, without ".svg". |
+| `color` | `color` | set = `Theme.text` | The stroke colour. |
 
 ### LockWindow (inherits `Window`)
 
@@ -165,6 +174,8 @@ The compositor itself: its name, requests it sends to the shell (keyboard shortc
 | `request-argument` | `string` | read |  |
 | `request-serial` | `int` | read |  |
 | `has-commands` | `bool` | read | Whether `command` is supported (LunaDash). |
+| `wallpaper` | `string` | read | The wallpaper image when the compositor manages one (LunaDash), as a local path; empty otherwise. Shells can show it instead of their own wallpaper setting. |
+| `language` | `string` | read | The desktop language chosen in the compositor (LunaDash), e.g. "zh_TW"; empty otherwise. |
 | `command(method: string, value: string)` | callback | call | A compositor-specific command, e.g. command("launch-default", "terminal") on LunaDash. |
 
 ### Files
@@ -344,6 +355,7 @@ Information about the running shell and actions it can perform.
 | `renderer` | `string` | read | The renderer in use: "software", "opengl" or "vulkan". |
 | `compositor` | `string` | read | The compositor, e.g. "niri", "hyprland", "sway" or "unknown". |
 | `version` | `string` | read |  |
+| `resources` | `string` | read | Directory of SlintLu's shared assets (res/ in the SlintLu repository), e.g. for Files.image(Shell.resources + "/icons/wifi.svg"). Icons are easier through `Icon`. |
 | `exec(command: string)` | callback | call | Runs a command line through `sh -c`, detached from the shell. |
 | `env(name: string)` | callback → `string` | call | An environment variable of the shell process ("" when unset). |
 | `reload()` | callback | call | Reloads the shell configuration. |

@@ -11,6 +11,11 @@ export global Compositor {
     in property <int> request-serial;
     // Whether `command` is supported (LunaDash).
     in property <bool> has-commands;
+    // The wallpaper image when the compositor manages one (LunaDash), as a local path; empty
+    // otherwise. Shells can show it instead of their own wallpaper setting.
+    in property <string> wallpaper;
+    // The desktop language chosen in the compositor (LunaDash), e.g. "zh_TW"; empty otherwise.
+    in property <string> language;
 
     // A compositor-specific command, e.g. command("launch-default", "terminal") on LunaDash.
     callback command(method: string, value: string);

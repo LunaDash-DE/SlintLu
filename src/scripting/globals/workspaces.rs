@@ -45,6 +45,8 @@ fn publish(host: &ShellHost, state: &DesktopState) {
     host.set_global("Workspaces", "keyboard-layout", string(&state.keyboard_layout));
     let focused_output = state.workspaces.iter().find(|w| w.focused).map(|w| w.output.as_str());
     host.set_global("Workspaces", "focused-output", string(focused_output.unwrap_or_default()));
+    host.set_global("Compositor", "wallpaper", string(&state.wallpaper));
+    host.set_global("Compositor", "language", string(&state.language));
     if let Some(request) = &state.request {
         host.set_global("Compositor", "request", string(&request.action));
         host.set_global("Compositor", "request-argument", string(&request.argument));

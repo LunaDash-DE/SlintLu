@@ -20,8 +20,8 @@ fn player(p: Option<&MediaPlayer>) -> Value {
         ("art-url", string(&p.art_url)),
         (
             "art",
-            Value::Image(match p.art_url.strip_prefix("file://") {
-                Some(path) => super::icons::image_at(std::path::Path::new(path)),
+            Value::Image(match slintlu::util::uri::file_uri_path(&p.art_url) {
+                Some(path) => super::icons::image_at(&path),
                 None => slint::Image::default(),
             }),
         ),

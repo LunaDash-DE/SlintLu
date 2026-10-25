@@ -10,6 +10,7 @@ const FILES: &[(&str, &str)] = &[
     ("types.slint", include_str!("../ui/types.slint")),
     ("runtime.slint", include_str!("../ui/runtime.slint")),
     ("windows.slint", include_str!("../ui/windows.slint")),
+    ("icons.slint", include_str!("../ui/icons.slint")),
     ("services/clock.slint", include_str!("../ui/services/clock.slint")),
     ("services/system.slint", include_str!("../ui/services/system.slint")),
     ("services/audio.slint", include_str!("../ui/services/audio.slint")),
@@ -33,6 +34,8 @@ const FILES: &[(&str, &str)] = &[
     ("services/shared.slint", include_str!("../ui/services/shared.slint")),
 ];
 
+include!(concat!(env!("OUT_DIR"), "/resources.rs"));
+
 /// The library name used in imports: `import { PanelWindow } from "@slintlu";`.
 pub const NAME: &str = "slintlu";
 
@@ -47,12 +50,25 @@ pub fn install() -> io::Result<PathBuf> {
     std::fs::create_dir_all(&dir)?;
     for (name, contents) in FILES {
         let path = dir.join(name);
-        if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent)?;
-        }
-        if std::fs::read_to_string(&path).ok().as_deref() != Some(*contents) {
-            std::fs::write(&path, contents)?;
-        }
+        write_if_changed(&path, contents.as_bytes())?;
+    }
+    for (name, contents) in RESOURCES {
+        write_if_changed(&dir.join(name), contents)?;
     }
     Ok(dir.join(FILES[0].0))
+}
+
+/// The shared assets (res/ in the source tree), next to the library files.
+pub fn resources_dir() -> PathBuf {
+    dir().join("res")
+}
+
+fn write_if_changed(path: &std::path::Path, contents: &[u8]) -> io::Result<()> {
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    if std::fs::read(path).ok().as_deref() != Some(contents) {
+        std::fs::write(path, contents)?;
+    }
+    Ok(())
 }

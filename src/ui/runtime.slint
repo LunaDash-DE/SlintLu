@@ -11,6 +11,9 @@ export global Shell {
     // The compositor, e.g. "niri", "hyprland", "sway" or "unknown".
     in property <string> compositor;
     in property <string> version;
+    // Directory of SlintLu's shared assets (res/ in the SlintLu repository), e.g. for
+    // Files.image(Shell.resources + "/icons/wifi.svg"). Icons are easier through `Icon`.
+    in property <string> resources;
 
     // Runs a command line through `sh -c`, detached from the shell.
     callback exec(command: string);

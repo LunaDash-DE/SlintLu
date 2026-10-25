@@ -13,6 +13,11 @@ use crate::scripting::host;
 pub fn install(host: &Rc<ShellHost>, info: &ShellInfo) {
     host.set_global("Shell", "compositor", string(info.compositor.as_str()));
     host.set_global("Shell", "version", string(env!("CARGO_PKG_VERSION")));
+    host.set_global(
+        "Shell",
+        "resources",
+        string(crate::scripting::library::resources_dir().to_string_lossy()),
+    );
 
     host.on_callback(
         "Shell",
