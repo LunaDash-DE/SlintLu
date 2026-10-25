@@ -1,5 +1,8 @@
 name: CI
 
+# CI only builds. Formatting, lints, tests and headless runs are local (`just ci`,
+# `just headless`); run them before pushing.
+
 on:
   push:
     branches: [main]
@@ -16,63 +19,12 @@ permissions:
 env:
   CARGO_TERM_COLOR: always
   CARGO_INCREMENTAL: 0
-  RUST_BACKTRACE: 1
   # Libraries Slint and smithay-client-toolkit link against.
   BUILD_PACKAGES: pkg-config libwayland-dev libxkbcommon-dev libfontconfig-dev libpam0g-dev
 
 jobs:
-  fmt:
-    name: Format
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt
-      - uses: extractions/setup-just@v4
-      - run: just fmt-check
-
-  typos:
-    name: Spelling
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v7
-      - uses: crate-ci/typos@v1
-
-  deny:
-    name: Licences & advisories
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v7
-      - uses: EmbarkStudios/cargo-deny-action@v2
-        with:
-          command: check
-          arguments: --all-features
-
-  lint:
-    name: Clippy & docs
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v7
-      - uses: awalsh128/cache-apt-pkgs-action@v1
-        with:
-          packages: ${{ env.BUILD_PACKAGES }}
-          version: build-2
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy
-      - uses: extractions/setup-just@v4
-      # Dependency cache: ~/.cargo registry/git + compiled dependencies in target/.
-      - uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: lint
-          save-if: ${{ github.ref == 'refs/heads/main' }}
-      - run: just lint
-      - run: just doc
-      - run: just api-docs-check
-
-  test:
-    name: Test (${{ matrix.toolchain }})
+  build:
+    name: Build (${{ matrix.toolchain }})
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -81,6 +33,8 @@ jobs:
         toolchain: [stable, "1.92"]
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: awalsh128/cache-apt-pkgs-action@v1
         with:
           packages: ${{ env.BUILD_PACKAGES }}
@@ -88,20 +42,23 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.toolchain }}
-      - uses: extractions/setup-just@v4
+      # Dependency cache: ~/.cargo registry/git + compiled dependencies in target/.
       - uses: Swatinem/rust-cache@v2
         with:
-          shared-key: test-${{ matrix.toolchain }}
+          shared-key: build-${{ matrix.toolchain }}
           save-if: ${{ github.ref == 'refs/heads/main' }}
-      - run: just test
+      - name: Build
+        run: cargo build --locked --release
       - name: Build without GPU renderers
-        run: cargo build --all-targets --no-default-features
+        run: cargo build --locked --release --no-default-features
 
   nix:
-    name: Nix flake
+    name: Nix package
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: cachix/install-nix-action@v31
       # Caches the Nix store between runs (GitHub Actions cache, no account needed).
       - uses: nix-community/cache-nix-action@v7
@@ -109,47 +66,5 @@ jobs:
           primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock', 'flake.nix', 'nix/**', 'Cargo.lock') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
           gc-max-store-size-linux: 4G
-      - name: Check the flake
-        run: scripts/annotate.sh "nix flake check" nix flake check -L --show-trace
-      - name: Build and smoke-test the package
-        run: |
-          scripts/annotate.sh "nix build" nix build -L .#slintlu
-          ./result/bin/slintlu --version
-          scripts/annotate.sh "packaged slintlu check" ./result/bin/slintlu check examples/starter
-      - name: Evaluate the development shell
-        run: scripts/annotate.sh "nix develop" nix develop -c just --version
-
-  headless:
-    name: Headless sway (${{ matrix.renderer }})
-    runs-on: ubuntu-24.04
-    needs: test
-    strategy:
-      fail-fast: false
-      matrix:
-        renderer: [software, opengl, vulkan]
-    # Software rendering must always work; GPU paths run on Mesa's llvmpipe / lavapipe and
-    # are informative only.
-    continue-on-error: ${{ matrix.renderer != 'software' }}
-    steps:
-      - uses: actions/checkout@v7
-      - uses: awalsh128/cache-apt-pkgs-action@v1
-        with:
-          packages: ${{ env.BUILD_PACKAGES }} sway grim dbus libnotify-bin fonts-dejavu-core libegl1 libgles2 libegl-mesa0 libgl1-mesa-dri mesa-vulkan-drivers libvulkan1
-          version: headless-4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: extractions/setup-just@v4
-      - uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: test-stable
-          save-if: false
-      - name: Render in headless sway
-        env:
-          LIBGL_ALWAYS_SOFTWARE: "1"
-          SCREENSHOT: ${{ runner.temp }}/shot-${{ matrix.renderer }}.ppm
-        run: just headless ${{ matrix.renderer }}
-      - uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: screenshot-${{ matrix.renderer }}
-          path: ${{ runner.temp }}/shot-${{ matrix.renderer }}.ppm
-          if-no-files-found: ignore
+      - name: Build the package
+        run: scripts/annotate.sh "nix build" nix build -L .#slintlu

@@ -44,11 +44,11 @@ slintlu             # runs it; edit the files and watch them reload
 With Nix:
 
 ```bash
-nix run github:LunaDash-DE/SlintLu -- init
-nix run github:LunaDash-DE/SlintLu
+nix run github:LunaDashWM/SlintLu -- init
+nix run github:LunaDashWM/SlintLu
 ```
 
-or in Home Manager (`inputs.slintlu.url = "github:LunaDash-DE/SlintLu";`):
+or in Home Manager (`inputs.slintlu.url = "github:LunaDashWM/SlintLu";`):
 
 ```nix
 imports = [ inputs.slintlu.homeManagerModules.default ];
@@ -162,7 +162,7 @@ Requires Rust ≥ 1.92, [`just`](https://github.com/casey/just), and the `waylan
 just           # list recipes
 just test      # unit and integration tests, no compositor needed
 just run       # run the starter shell in the current session
-just ci        # what CI runs
+just ci        # all checks and tests; CI itself only builds, so run this before pushing
 ```
 
 See [docs/TESTING.md](docs/TESTING.md) for all ways to test and

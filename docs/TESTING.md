@@ -7,7 +7,7 @@
 sudo pacman -S --needed rust just wayland libxkbcommon fontconfig pam
 # Optional: headless integration test and screenshots
 sudo pacman -S --needed sway grim
-# Optional: the same static checks CI runs
+# Optional: the dependency and spelling checks (`just deny`, `just typos`)
 cargo install --locked cargo-deny typos-cli
 ```
 
@@ -20,7 +20,7 @@ just test        # unit tests, CLI integration tests, doctests
 just lint        # clippy with and without the GPU renderers
 just doc         # API documentation
 just check       # compile the starter shell and print diagnostics
-just ci          # everything above plus the format check (same as CI)
+just ci          # everything above plus the format check
 just deny        # licences and security advisories
 just typos       # spelling
 ```
@@ -49,18 +49,19 @@ INFO  slintlu::render::gpu] Vulkan adapter: NVIDIA GeForce RTX 3050 (DiscreteGpu
 
 The Rust library example: `just example hello_bar vulkan`.
 
-## 4. Headless integration test (same as CI)
+## 4. Headless integration test
 
 Runs the shell in a separate headless sway, takes a screenshot with grim and checks that a bar
 was drawn along the top edge. It does not touch your desktop.
 
 ```bash
 just headless software
-just headless vulkan                     # needs a Vulkan driver (CI uses Mesa lavapipe)
+just headless vulkan                     # needs a Vulkan driver (Mesa lavapipe works)
 KEEP_ARTIFACTS=1 just headless opengl    # keep the screenshot and logs for debugging
 ```
 
 ## 5. Pull requests
 
-Opening a pull request runs CI plus the PR review workflow (title check, dependency review,
-inline clippy comments, coverage summary, labels). See [CONTRIBUTING.md](../CONTRIBUTING.md).
+CI only builds (stable, the minimum Rust version, without GPU renderers, and the Nix package);
+run `just ci` and `just headless` yourself before pushing. A pull request also gets the PR
+review workflow (title check, dependency review, labels). See [CONTRIBUTING.md](../CONTRIBUTING.md).

@@ -7,7 +7,7 @@
 
 [Unit]
 Description=SlintLu desktop shell
-Documentation=https://github.com/LunaDash-DE/SlintLu
+Documentation=https://github.com/LunaDashWM/SlintLu
 PartOf=graphical-session.target
 After=graphical-session.target
 Requisite=graphical-session.target

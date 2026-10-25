@@ -45,6 +45,8 @@ rustPlatform.buildRustPackage {
     pam
   ];
 
+  # Building does not run the test suite (`just test` does, before pushing); CI only builds.
+  doCheck = false;
   # Tests touching the machine (/proc, /sys, PAM) work in the sandbox; the CLI tests need a
   # writable data directory.
   preCheck = ''
@@ -66,7 +68,7 @@ rustPlatform.buildRustPackage {
 
   meta = {
     description = "Wayland desktop shells written in the Slint language";
-    homepage = "https://github.com/LunaDash-DE/SlintLu";
+    homepage = "https://github.com/LunaDashWM/SlintLu";
     license = lib.licenses.gpl3Only;
     mainProgram = "slintlu";
     platforms = lib.platforms.linux;
